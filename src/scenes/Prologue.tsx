@@ -10,6 +10,7 @@ import { Timer } from '../components/Timer';
 import { QualityRating } from '../components/QualityRating';
 import { ExpertFeedback } from '../components/ExpertFeedback';
 import { TechDashboard } from '../components/TechDashboard';
+import { VillageExplorer } from '../components/VillageExplorer';
 import { RandomEvent, RandomEventGenerator, type RandomEvent as RandomEventType } from '../components/RandomEvent';
 import { FeedbackAnimation, feedbackManager, type Feedback } from '../components/FeedbackAnimation';
 import { soundEffects } from '../utils/soundEffects';
@@ -594,7 +595,7 @@ export function Prologue({ onComplete }: { onComplete?: () => void }) {
             </motion.div>
           )}
 
-          {/* EXPLORE PHASE */}
+          {/* EXPLORE PHASE - 村庄探索 */}
           {phase === 'explore' && (
             <motion.div 
               key="explore"
@@ -603,43 +604,34 @@ export function Prologue({ onComplete }: { onComplete?: () => void }) {
               exit={{ opacity: 0 }}
               className="absolute inset-0"
             >
-              <Flashlight active={!allCluesFound}>
-                <div className="w-full h-full relative bg-slate-900/20">
-                  {/* Background hints */}
-                  <div className="absolute inset-0 opacity-10 pointer-events-none" style={{
-                    backgroundImage: 'radial-gradient(circle at 50% 50%, #1e293b 0%, #000 100%)'
-                  }} />
+              <VillageExplorer
+                onClueCollected={(clueId, clueLabel) => {
+                  // 更新线索状态
+                  setClues(prev => prev.map(c => 
+                    c.id === clueId ? { ...c, found: true } : c
+                  ));
                   
-                  {clues.map((clue) => (
-                    <motion.button
-                      key={clue.id}
-                      className={cn(
-                        "absolute p-4 rounded-full transition-all duration-300",
-                        clue.found ? "bg-slate-800/80 border border-slate-600" : "hover:bg-white/20 hover:shadow-lg"
-                      )}
-                      style={{ left: clue.x, top: clue.y, transform: 'translate(-50%, -50%)' }}
-                      onClick={() => handleClueClick(clue.id)}
-                      whileHover={{ scale: 1.15 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      {clue.icon}
-                      {clue.found && (
-                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-48 bg-black/90 border border-slate-700 p-2 text-xs text-slate-300 rounded shadow-xl z-20">
-                          <p className="font-bold text-white mb-1">{clue.label}</p>
-                          <p>{clue.desc}</p>
-                        </div>
-                      )}
-                    </motion.button>
-                  ))}
-
-                  {/* UI Overlay */}
-                  <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-center pointer-events-none">
-                    <p className="font-mono text-sm text-slate-400 bg-black/50 px-4 py-2 rounded-full backdrop-blur">
-                      {allCluesFound ? "线索收集完毕，准备进行分析..." : "在黑暗中移动鼠标/手指寻找线索"}
-                    </p>
-                  </div>
-                </div>
-              </Flashlight>
+                  // 播放音效和显示反馈
+                  soundEffects.success();
+                  feedbackManager.showSuccess(`发现线索：${clueLabel}`);
+                  recordSuccess();
+                  
+                  // 触发随机事件
+                  if (Math.random() < 0.2) {
+                    const event = eventGenerator.getRandomEvent('prologue', 'discovery');
+                    if (event) {
+                      soundEffects.randomEvent();
+                      setRandomEvent(event);
+                    }
+                  }
+                }}
+                onAllCluesCollected={() => {
+                  // 所有线索收集完毕
+                  soundEffects.chapterComplete();
+                  feedbackManager.showAchievement('线索收集完成！');
+                }}
+                collectedClues={clues.filter(c => c.found).map(c => c.id)}
+              />
             </motion.div>
           )}
 
