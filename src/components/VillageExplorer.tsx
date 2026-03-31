@@ -314,41 +314,57 @@ export function VillageExplorer({ onClueCollected, onAllCluesCollected, collecte
   };
 
   return (
-    <div className="relative w-full h-full flex items-center justify-center bg-gradient-to-b from-slate-900 to-slate-800">
+    <div className="relative w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-950 via-slate-900 to-purple-950 overflow-hidden">
+      {/* 背景装饰 */}
+      <div className="absolute inset-0 opacity-20">
+        <div className="absolute top-0 left-0 w-96 h-96 bg-blue-500 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-500 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-cyan-500 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
+      </div>
+      
       {/* 地图容器 */}
       <div 
-        className="relative border-4 border-slate-700 rounded-lg overflow-hidden shadow-2xl"
+        className="relative rounded-2xl overflow-hidden shadow-[0_0_60px_rgba(59,130,246,0.5)] border-4 border-blue-500/30 backdrop-blur-sm"
         style={{
           width: MAP_WIDTH * TILE_SIZE,
           height: MAP_HEIGHT * TILE_SIZE,
-          background: 'linear-gradient(to bottom, #1e293b 0%, #0f172a 100%)'
+          background: 'linear-gradient(135deg, #1e3a5f 0%, #0f172a 50%, #1a1f3a 100%)',
+          boxShadow: '0 0 80px rgba(59, 130, 246, 0.4), inset 0 0 60px rgba(0, 0, 0, 0.5)'
         }}
       >
-        {/* 网格背景 */}
-        <div className="absolute inset-0 opacity-10">
+        {/* 动态网格背景 */}
+        <div className="absolute inset-0 opacity-20">
           {Array.from({ length: MAP_HEIGHT }).map((_, y) => (
             <div key={y} className="flex">
               {Array.from({ length: MAP_WIDTH }).map((_, x) => (
                 <div
                   key={`${x}-${y}`}
-                  className="border border-slate-600"
+                  className="border border-cyan-500/20 transition-all hover:border-cyan-400/40 hover:bg-cyan-500/5"
                   style={{ width: TILE_SIZE, height: TILE_SIZE }}
                 />
               ))}
             </div>
           ))}
         </div>
+        
+        {/* 光效层 */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute inset-0 bg-gradient-to-t from-transparent via-blue-500/5 to-transparent animate-pulse" />
+        </div>
 
         {/* 障碍物 */}
         {OBSTACLES.map((obstacle, idx) => (
-          <div
+          <motion.div
             key={idx}
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: idx * 0.05 }}
             className={cn(
-              "absolute transition-all",
-              obstacle.type === 'building' && "bg-slate-700 border-2 border-slate-600 rounded",
-              obstacle.type === 'tree' && "bg-green-800 rounded-full",
-              obstacle.type === 'water' && "bg-blue-900 opacity-70",
-              obstacle.type === 'bridge' && "bg-amber-900 border-2 border-amber-700"
+              "absolute transition-all duration-300",
+              obstacle.type === 'building' && "bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900 border-2 border-blue-500/40 rounded-lg shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:shadow-[0_0_30px_rgba(59,130,246,0.5)]",
+              obstacle.type === 'tree' && "bg-gradient-to-br from-emerald-700 to-green-900 rounded-full shadow-[0_0_15px_rgba(16,185,129,0.4)] border-2 border-emerald-500/30",
+              obstacle.type === 'water' && "bg-gradient-to-br from-blue-600/60 via-cyan-600/50 to-blue-800/60 backdrop-blur-sm animate-pulse shadow-[0_0_25px_rgba(6,182,212,0.5)]",
+              obstacle.type === 'bridge' && "bg-gradient-to-br from-amber-800 via-yellow-900 to-amber-950 border-2 border-yellow-600/50 shadow-[0_0_20px_rgba(251,191,36,0.4)] rounded"
             )}
             style={{
               left: obstacle.x * TILE_SIZE,
@@ -358,11 +374,13 @@ export function VillageExplorer({ onClueCollected, onAllCluesCollected, collecte
             }}
           >
             {obstacle.label && (
-              <div className="absolute inset-0 flex items-center justify-center text-xs text-slate-300 font-bold">
-                {obstacle.label}
+              <div className="absolute inset-0 flex items-center justify-center text-xs font-bold bg-black/30 backdrop-blur-sm rounded">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-cyan-300 drop-shadow-[0_0_8px_rgba(59,130,246,0.8)]">
+                  {obstacle.label}
+                </span>
               </div>
             )}
-          </div>
+          </motion.div>
         ))}
 
         {/* NPCs */}
@@ -373,34 +391,85 @@ export function VillageExplorer({ onClueCollected, onAllCluesCollected, collecte
           return (
             <motion.div
               key={npc.id}
-              className="absolute flex flex-col items-center"
+              className="absolute flex flex-col items-center z-10"
               style={{
                 left: npc.x * TILE_SIZE,
                 top: npc.y * TILE_SIZE,
                 width: TILE_SIZE,
                 height: TILE_SIZE
               }}
+              initial={{ scale: 0, opacity: 0 }}
               animate={{
-                scale: isNearby ? 1.2 : 1
+                scale: isNearby ? 1.3 : 1,
+                opacity: 1
               }}
+              transition={{ type: "spring", stiffness: 300, damping: 20 }}
             >
-              <div className="text-2xl">{npc.avatar}</div>
-              <div className="text-xs text-slate-300 font-bold mt-1 whitespace-nowrap">
+              {/* NPC发光背景 */}
+              {isNearby && (
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-r from-blue-500/30 to-purple-500/30 rounded-full blur-xl"
+                  animate={{
+                    scale: [1, 1.5, 1],
+                    opacity: [0.3, 0.6, 0.3]
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
+                />
+              )}
+              
+              {/* NPC头像 */}
+              <div className={cn(
+                "text-3xl relative z-10 transition-all duration-300",
+                isNearby && "drop-shadow-[0_0_15px_rgba(59,130,246,0.8)]"
+              )}>
+                {npc.avatar}
+              </div>
+              
+              {/* NPC名字 */}
+              <div className={cn(
+                "text-xs font-bold mt-1 whitespace-nowrap px-2 py-0.5 rounded-full transition-all duration-300",
+                isNearby 
+                  ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-[0_0_15px_rgba(59,130,246,0.6)]" 
+                  : "bg-slate-800/80 text-slate-300 border border-slate-600/50"
+              )}>
                 {npc.name}
               </div>
+              
+              {/* 任务提示 */}
               {isNearby && !hasCollected && npc.hasClue && (
                 <motion.div
-                  initial={{ opacity: 0, y: -5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="absolute -top-6 bg-yellow-500 text-black text-xs px-2 py-1 rounded-full font-bold"
+                  initial={{ opacity: 0, y: -10, scale: 0 }}
+                  animate={{ 
+                    opacity: 1, 
+                    y: [-8, -12, -8],
+                    scale: 1
+                  }}
+                  transition={{
+                    y: {
+                      duration: 1.5,
+                      repeat: Infinity,
+                      ease: "easeInOut"
+                    }
+                  }}
+                  className="absolute -top-8 bg-gradient-to-r from-yellow-400 to-orange-500 text-black text-xs px-3 py-1 rounded-full font-bold shadow-[0_0_20px_rgba(251,191,36,0.8)] border-2 border-yellow-300"
                 >
-                  ❗
+                  💬 按Enter对话
                 </motion.div>
               )}
+              
+              {/* 完成标记 */}
               {hasCollected && (
-                <div className="absolute -top-6 text-green-500 text-lg">
-                  ✓
-                </div>
+                <motion.div
+                  initial={{ scale: 0, rotate: -180 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  className="absolute -top-8 text-2xl"
+                >
+                  <span className="drop-shadow-[0_0_10px_rgba(34,197,94,0.8)]">✅</span>
+                </motion.div>
               )}
             </motion.div>
           );
@@ -408,7 +477,7 @@ export function VillageExplorer({ onClueCollected, onAllCluesCollected, collecte
 
         {/* 玩家 */}
         <motion.div
-          className="absolute z-20 flex items-center justify-center text-3xl"
+          className="absolute z-20 flex items-center justify-center"
           style={{
             left: playerX * TILE_SIZE,
             top: playerY * TILE_SIZE,
@@ -418,8 +487,26 @@ export function VillageExplorer({ onClueCollected, onAllCluesCollected, collecte
           animate={{
             rotate: direction === 'left' ? -90 : direction === 'right' ? 90 : direction === 'down' ? 180 : 0
           }}
+          transition={{ type: "spring", stiffness: 500, damping: 30 }}
         >
-          {getPlayerSprite()}
+          {/* 玩家光环 */}
+          <motion.div
+            className="absolute inset-0 bg-gradient-to-r from-cyan-400/40 to-blue-500/40 rounded-full blur-lg"
+            animate={{
+              scale: [1, 1.2, 1],
+              opacity: [0.4, 0.7, 0.4]
+            }}
+            transition={{
+              duration: 1.5,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+          />
+          
+          {/* 玩家角色 */}
+          <div className="text-4xl relative z-10 drop-shadow-[0_0_20px_rgba(6,182,212,1)]">
+            {getPlayerSprite()}
+          </div>
         </motion.div>
       </div>
 
@@ -427,110 +514,221 @@ export function VillageExplorer({ onClueCollected, onAllCluesCollected, collecte
       <AnimatePresence>
         {currentDialogue && (
           <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 50 }}
-            className="absolute bottom-8 left-1/2 -translate-x-1/2 w-[600px] bg-slate-900 border-4 border-slate-700 rounded-lg p-6 shadow-2xl"
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 50, scale: 0.9 }}
+            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            className="absolute bottom-8 left-1/2 -translate-x-1/2 w-[650px] max-w-[90vw]"
           >
-            <div className="flex items-start gap-4">
-              <div className="text-4xl">{currentDialogue.npc.avatar}</div>
-              <div className="flex-1">
-                <div className="text-xl font-bold text-blue-400 mb-2">
-                  {currentDialogue.npc.name}
-                </div>
-                <div className="text-slate-200 leading-relaxed">
-                  {currentDialogue.text}
+            {/* 对话框背景光晕 */}
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/30 to-purple-500/30 rounded-2xl blur-2xl" />
+            
+            {/* 对话框主体 */}
+            <div className="relative bg-gradient-to-br from-slate-900/95 via-slate-800/95 to-slate-900/95 border-2 border-blue-500/50 rounded-2xl p-6 shadow-[0_0_60px_rgba(59,130,246,0.4)] backdrop-blur-xl">
+              {/* 顶部装饰条 */}
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-cyan-500 rounded-t-2xl" />
+              
+              <div className="flex items-start gap-4">
+                {/* NPC头像 */}
+                <motion.div 
+                  className="text-5xl relative"
+                  animate={{
+                    scale: [1, 1.1, 1],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/30 to-purple-500/30 rounded-full blur-xl" />
+                  <div className="relative z-10 drop-shadow-[0_0_15px_rgba(59,130,246,0.8)]">
+                    {currentDialogue.npc.avatar}
+                  </div>
+                </motion.div>
+                
+                <div className="flex-1">
+                  {/* NPC名字 */}
+                  <div className="text-xl font-bold mb-3 bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 text-transparent bg-clip-text drop-shadow-[0_0_10px_rgba(59,130,246,0.5)]">
+                    {currentDialogue.npc.name}
+                  </div>
+                  
+                  {/* 对话内容 */}
+                  <div className="text-slate-100 leading-relaxed text-base bg-slate-800/30 rounded-lg p-4 border border-slate-700/50">
+                    {currentDialogue.text}
+                  </div>
                 </div>
               </div>
+              
+              {/* 继续按钮 */}
+              <motion.button
+                onClick={closeDialogue}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="mt-4 w-full px-6 py-3 bg-gradient-to-r from-blue-600 via-purple-600 to-cyan-600 hover:from-blue-500 hover:via-purple-500 hover:to-cyan-500 text-white font-bold rounded-xl transition-all shadow-[0_0_30px_rgba(59,130,246,0.5)] hover:shadow-[0_0_40px_rgba(59,130,246,0.7)] border border-blue-400/30"
+              >
+                <span className="flex items-center justify-center gap-2">
+                  继续 <kbd className="px-2 py-1 bg-white/20 rounded text-xs">Enter</kbd>
+                </span>
+              </motion.button>
             </div>
-            <button
-              onClick={closeDialogue}
-              className="mt-4 w-full px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded transition-all"
-            >
-              继续 (Enter)
-            </button>
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* 控制提示 */}
       {showControls && (
-        <div className="absolute top-4 right-4 bg-slate-900/90 border-2 border-slate-700 rounded-lg p-4 text-sm">
-          <div className="flex items-center justify-between mb-2">
-            <div className="text-blue-400 font-bold">操作说明</div>
-            <button
-              onClick={() => setShowControls(false)}
-              className="text-slate-500 hover:text-slate-300"
-            >
-              ✕
-            </button>
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="absolute top-4 right-4"
+        >
+          {/* 背景光晕 */}
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-xl blur-xl" />
+          
+          <div className="relative bg-gradient-to-br from-slate-900/95 via-slate-800/95 to-slate-900/95 border-2 border-purple-500/40 rounded-xl p-4 text-sm shadow-[0_0_30px_rgba(168,85,247,0.3)] backdrop-blur-xl">
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400 font-bold flex items-center gap-2">
+                🎮 操作说明
+              </div>
+              <button
+                onClick={() => setShowControls(false)}
+                className="text-slate-500 hover:text-slate-300 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="space-y-2 text-slate-300">
+              <div className="flex items-center gap-2 bg-slate-800/50 rounded px-2 py-1">
+                <kbd className="px-2 py-1 bg-slate-700 rounded text-xs">↑↓←→</kbd>
+                <span className="text-xs">或</span>
+                <kbd className="px-2 py-1 bg-slate-700 rounded text-xs">WASD</kbd>
+                <span className="text-xs">移动</span>
+              </div>
+              <div className="flex items-center gap-2 bg-slate-800/50 rounded px-2 py-1">
+                <kbd className="px-2 py-1 bg-slate-700 rounded text-xs">Enter</kbd>
+                <span className="text-xs">/</span>
+                <kbd className="px-2 py-1 bg-slate-700 rounded text-xs">空格</kbd>
+                <span className="text-xs">对话</span>
+              </div>
+              <div className="text-yellow-400 mt-3 bg-yellow-500/10 rounded px-2 py-1.5 border border-yellow-500/30 text-xs">
+                💡 找到5位村民收集线索
+              </div>
+            </div>
           </div>
-          <div className="space-y-1 text-slate-300">
-            <div>↑↓←→ 或 WASD - 移动</div>
-            <div>Enter/空格 - 对话</div>
-            <div className="text-yellow-400 mt-2">💡 找到5位村民收集线索</div>
-          </div>
-        </div>
+        </motion.div>
       )}
 
       {/* 线索收集进度 */}
-      <div className="absolute top-4 left-4 bg-slate-900/90 border-2 border-slate-700 rounded-lg p-4">
-        <div className="text-blue-400 font-bold mb-2">线索收集进度</div>
-        <div className="text-2xl font-bold text-white">
-          {collectedClues.length} / {NPCS.filter(npc => npc.hasClue).length}
+      <motion.div
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        className="absolute top-4 left-4"
+      >
+        {/* 背景光晕 */}
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-xl blur-xl" />
+        
+        <div className="relative bg-gradient-to-br from-slate-900/95 via-slate-800/95 to-slate-900/95 border-2 border-blue-500/40 rounded-xl p-4 shadow-[0_0_30px_rgba(59,130,246,0.3)] backdrop-blur-xl min-w-[200px]">
+          <div className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400 font-bold mb-3 flex items-center gap-2">
+            📋 线索收集进度
+          </div>
+          
+          {/* 进度数字 */}
+          <div className="text-3xl font-bold mb-3 text-center">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-400 drop-shadow-[0_0_10px_rgba(34,197,94,0.5)]">
+              {collectedClues.length}
+            </span>
+            <span className="text-slate-500 mx-1">/</span>
+            <span className="text-slate-400">
+              {NPCS.filter(npc => npc.hasClue).length}
+            </span>
+          </div>
+          
+          {/* 进度条 */}
+          <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden mb-3">
+            <motion.div
+              className="h-full bg-gradient-to-r from-blue-500 via-cyan-500 to-green-500 shadow-[0_0_10px_rgba(59,130,246,0.8)]"
+              initial={{ width: 0 }}
+              animate={{ 
+                width: `${(collectedClues.length / NPCS.filter(npc => npc.hasClue).length) * 100}%` 
+              }}
+              transition={{ type: "spring", stiffness: 100, damping: 15 }}
+            />
+          </div>
+          
+          {/* NPC列表 */}
+          <div className="space-y-1.5">
+            {NPCS.filter(npc => npc.hasClue).map(npc => {
+              const collected = collectedClues.includes(npc.id);
+              return (
+                <motion.div
+                  key={npc.id}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className={cn(
+                    "text-sm flex items-center gap-2 px-2 py-1 rounded transition-all",
+                    collected 
+                      ? "bg-green-500/20 border border-green-500/30 text-green-400" 
+                      : "bg-slate-800/30 border border-slate-700/30 text-slate-500"
+                  )}
+                >
+                  <span className="text-base">
+                    {collected ? '✅' : '⭕'}
+                  </span>
+                  <span>{npc.name}</span>
+                </motion.div>
+              );
+            })}
+          </div>
         </div>
-        <div className="mt-2 space-y-1">
-          {NPCS.filter(npc => npc.hasClue).map(npc => (
-            <div
-              key={npc.id}
-              className={cn(
-                "text-sm",
-                collectedClues.includes(npc.id) ? "text-green-400" : "text-slate-500"
-              )}
-            >
-              {collectedClues.includes(npc.id) ? '✓' : '○'} {npc.name}
-            </div>
-          ))}
-        </div>
-      </div>
+      </motion.div>
 
       {/* 移动按钮（移动端） */}
-      <div className="absolute bottom-24 right-8 grid grid-cols-3 gap-2 md:hidden">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="absolute bottom-24 right-8 grid grid-cols-3 gap-2 md:hidden"
+      >
         <div />
-        <button
+        <motion.button
+          whileTap={{ scale: 0.9 }}
           onClick={() => movePlayer(0, -1, 'up')}
-          className="w-12 h-12 bg-slate-700 hover:bg-slate-600 rounded flex items-center justify-center text-white"
+          className="w-14 h-14 bg-gradient-to-br from-slate-700 to-slate-800 hover:from-slate-600 hover:to-slate-700 rounded-xl flex items-center justify-center text-white shadow-[0_0_20px_rgba(100,116,139,0.5)] border border-slate-600/50 transition-all"
         >
-          <ChevronUp />
-        </button>
+          <ChevronUp className="w-6 h-6" />
+        </motion.button>
         <div />
-        <button
+        <motion.button
+          whileTap={{ scale: 0.9 }}
           onClick={() => movePlayer(-1, 0, 'left')}
-          className="w-12 h-12 bg-slate-700 hover:bg-slate-600 rounded flex items-center justify-center text-white"
+          className="w-14 h-14 bg-gradient-to-br from-slate-700 to-slate-800 hover:from-slate-600 hover:to-slate-700 rounded-xl flex items-center justify-center text-white shadow-[0_0_20px_rgba(100,116,139,0.5)] border border-slate-600/50 transition-all"
         >
-          <ChevronLeft />
-        </button>
-        <button
+          <ChevronLeft className="w-6 h-6" />
+        </motion.button>
+        <motion.button
+          whileTap={{ scale: 0.9 }}
           onClick={checkNPCInteraction}
-          className="w-12 h-12 bg-blue-600 hover:bg-blue-500 rounded flex items-center justify-center text-white"
+          className="w-14 h-14 bg-gradient-to-br from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 rounded-xl flex items-center justify-center text-white shadow-[0_0_30px_rgba(59,130,246,0.6)] border border-blue-400/50 transition-all"
         >
-          <MessageCircle />
-        </button>
-        <button
+          <MessageCircle className="w-6 h-6" />
+        </motion.button>
+        <motion.button
+          whileTap={{ scale: 0.9 }}
           onClick={() => movePlayer(1, 0, 'right')}
-          className="w-12 h-12 bg-slate-700 hover:bg-slate-600 rounded flex items-center justify-center text-white"
+          className="w-14 h-14 bg-gradient-to-br from-slate-700 to-slate-800 hover:from-slate-600 hover:to-slate-700 rounded-xl flex items-center justify-center text-white shadow-[0_0_20px_rgba(100,116,139,0.5)] border border-slate-600/50 transition-all"
         >
-          <ChevronRight />
-        </button>
+          <ChevronRight className="w-6 h-6" />
+        </motion.button>
         <div />
-        <button
+        <motion.button
+          whileTap={{ scale: 0.9 }}
           onClick={() => movePlayer(0, 1, 'down')}
-          className="w-12 h-12 bg-slate-700 hover:bg-slate-600 rounded flex items-center justify-center text-white"
+          className="w-14 h-14 bg-gradient-to-br from-slate-700 to-slate-800 hover:from-slate-600 hover:to-slate-700 rounded-xl flex items-center justify-center text-white shadow-[0_0_20px_rgba(100,116,139,0.5)] border border-slate-600/50 transition-all"
         >
-          <ChevronDown />
-        </button>
+          <ChevronDown className="w-6 h-6" />
+        </motion.button>
         <div />
-      </div>
+      </motion.div>
     </div>
   );
 }
