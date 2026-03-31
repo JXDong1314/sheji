@@ -27,6 +27,12 @@ client = OpenAI(
 # 场景定义
 SCENES = [
     {
+        "name": "village_background",
+        "filename": "village-background.png",
+        "prompt": "16-bit pixel art style, top-down aerial view of a traditional Chinese village, vibrant green grass fields with small colorful flowers, winding dirt stone paths in warm brown tones, peaceful blue river flowing through the center, rustic wooden bridge crossing the river, traditional houses with red tile roofs and gray stone walls, lush green trees scattered around, warm and peaceful atmosphere, retro RPG game background aesthetic, detailed pixel art with clear tiles, nostalgic 90s JRPG style, bright and colorful, 1024x1024 pixels, game asset quality",
+        "description": "序章 - 村庄探索像素风格背景图"
+    },
+    {
         "name": "prologue_bridge",
         "filename": "prologue_bridge.png",
         "prompt": "现代乡村桥梁工程勘查现场，白天或黄昏时分，专业工程师正在使用测量仪器检查桥梁，地面摆放着工程图纸和笔记本电脑，桥栏杆部分用黄黑警戒线围起，远处可见村庄房屋，专业技术氛围，蓝灰色调为主，现代工程纪录片风格，清晰明亮，高细节，16:9横构图，写实摄影风格，专业光影效果，oc渲染",
