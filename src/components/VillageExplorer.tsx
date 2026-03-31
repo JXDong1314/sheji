@@ -388,43 +388,25 @@ export function VillageExplorer({ onClueCollected, onAllCluesCollected, collecte
   };
 
   return (
-    <div className="relative w-full h-full flex items-center justify-center overflow-hidden" style={{ background: 'linear-gradient(135deg, #1a3a2e 0%, #0f2922 50%, #1a2f3a 100%)' }}>
-      {/* 像素风格草地背景 */}
-      <div className="absolute inset-0">
-        {/* 草地基础色 */}
-        <div className="absolute inset-0 bg-gradient-to-br from-green-900/40 via-emerald-800/40 to-teal-900/40" />
-        
-        {/* 像素网格效果 - 更明显 */}
-        <div 
-          className="absolute inset-0"
-          style={{
-            backgroundImage: `
-              repeating-linear-gradient(0deg, transparent, transparent 16px, rgba(34, 197, 94, 0.15) 16px, rgba(34, 197, 94, 0.15) 17px),
-              repeating-linear-gradient(90deg, transparent, transparent 16px, rgba(34, 197, 94, 0.15) 16px, rgba(34, 197, 94, 0.15) 17px)
-            `,
-            imageRendering: 'pixelated'
-          }}
-        />
-        
-        {/* 草地纹理点缀 */}
-        <div 
-          className="absolute inset-0 opacity-20"
-          style={{
-            backgroundImage: `
-              radial-gradient(circle at 20% 30%, rgba(34, 197, 94, 0.3) 1px, transparent 1px),
-              radial-gradient(circle at 60% 70%, rgba(34, 197, 94, 0.3) 1px, transparent 1px),
-              radial-gradient(circle at 80% 20%, rgba(34, 197, 94, 0.3) 1px, transparent 1px)
-            `,
-            backgroundSize: '50px 50px'
-          }}
-        />
-      </div>
+    <div className="relative w-full h-full flex items-center justify-center overflow-hidden bg-slate-950">
+      {/* 豆包生成的村庄背景图 */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center"
+        style={{
+          backgroundImage: 'url(/village-background.jpg)',
+          opacity: 0.6,
+          filter: 'brightness(0.8) contrast(1.1)',
+          imageRendering: 'pixelated'
+        }}
+      />
       
-      {/* 背景装饰光晕 - 降低强度 */}
-      <div className="absolute inset-0 opacity-10">
+      {/* 渐变遮罩增强氛围 */}
+      <div className="absolute inset-0 bg-gradient-to-b from-slate-950/40 via-transparent to-slate-950/60" />
+      
+      {/* 微弱的光晕装饰 */}
+      <div className="absolute inset-0 opacity-5">
         <div className="absolute top-0 left-0 w-96 h-96 bg-blue-500 rounded-full blur-3xl animate-pulse" />
         <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-500 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-cyan-500 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
       </div>
       
       {/* 地图容器 */}
