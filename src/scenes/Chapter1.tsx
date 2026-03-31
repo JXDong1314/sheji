@@ -4,6 +4,9 @@ import { Glitch } from '../components/Glitch';
 import { SceneBackground } from '../components/SceneBackground';
 import { ScoreDisplay } from '../components/ScoreDisplay';
 import { AchievementToast } from '../components/AchievementToast';
+import { RandomEvent, RandomEventGenerator, type RandomEvent as RandomEventType } from '../components/RandomEvent';
+import { FeedbackAnimation, feedbackManager, type Feedback } from '../components/FeedbackAnimation';
+import { soundEffects } from '../utils/soundEffects';
 import { useGame } from '../hooks/useGame';
 import { Wind, Sun, Volume2, VolumeX, Lightbulb, LightbulbOff, Scissors, CheckCircle2, Zap, Battery, ToggleLeft, Mic, ArrowRight, Settings } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -25,7 +28,7 @@ const CONTROL_OPTIONS = [
 ];
 
 export function Chapter1({ onComplete }: { onComplete?: () => void }) {
-  const { state } = useGame();
+  const { state, addScore, recordError, recordSuccess, resetChapterStats } = useGame();
   
   const [phase, setPhase] = useState<Phase>('intro');
   const [introStep, setIntroStep] = useState(0);
@@ -35,14 +38,27 @@ export function Chapter1({ onComplete }: { onComplete?: () => void }) {
   // 成就弹窗状态
   const [currentAchievement, setCurrentAchievement] = useState<Achievement | null>(null);
   
+  // 随机事件和反馈系统
+  const [randomEvent, setRandomEvent] = useState<RandomEventType | null>(null);
+  const [feedback, setFeedback] = useState<Feedback | null>(null);
+  const [eventGenerator] = useState(() => new RandomEventGenerator());
+  
+  // 初始化时重置章节统计
+  useEffect(() => {
+    resetChapterStats();
+    soundEffects.setEnabled(true);
+  }, [resetChapterStats]);
+  
   // Blackbox state
   const [speakerCut, setSpeakerCut] = useState(false);
   const [lightConnected, setLightConnected] = useState(true);
+  const [blackboxAttempts, setBlackboxAttempts] = useState(0);
   
   // Screening state
   const [powerIdx, setPowerIdx] = useState(0);
   const [controlIdx, setControlIdx] = useState(0);
   const [isLocked, setIsLocked] = useState(false);
+  const [screeningAttempts, setScreeningAttempts] = useState(0);
 
   const isBlackboxSolved = speakerCut && lightConnected;
   const isScreeningSolved = isLocked && POWER_OPTIONS[powerIdx].id === 'hybrid' && CONTROL_OPTIONS[controlIdx].id === 'light';
@@ -77,6 +93,18 @@ export function Chapter1({ onComplete }: { onComplete?: () => void }) {
       <AchievementToast 
         achievement={currentAchievement} 
         onClose={() => setCurrentAchievement(null)} 
+      />
+      
+      {/* 随机事件 */}
+      <RandomEvent
+        event={randomEvent}
+        onClose={() => setRandomEvent(null)}
+      />
+      
+      {/* 反馈动画 */}
+      <FeedbackAnimation
+        feedback={feedback}
+        onComplete={() => setFeedback(null)}
       />
 
       <main className="flex-1 relative">
@@ -176,7 +204,20 @@ export function Chapter1({ onComplete }: { onComplete?: () => void }) {
                       {/* Wire to Speaker */}
                       <div 
                         className="absolute right-full w-24 h-2 -translate-y-1/2 top-1/2 flex items-center justify-center cursor-pointer group"
-                        onClick={() => setSpeakerCut(!speakerCut)}
+                        onClick={() => {
+                          soundEffects.click();
+                          if (!speakerCut) {
+                            soundEffects.disconnect();
+                            feedbackManager.showSuccess('剪断噪音线路！');
+                            recordSuccess();
+                          } else {
+                            soundEffects.connect();
+                            feedbackManager.showError('重新连接了噪音线路');
+                            setBlackboxAttempts(prev => prev + 1);
+                            recordError('chapter1');
+                          }
+                          setSpeakerCut(!speakerCut);
+                        }}
                       >
                         <div className={cn(
                           "w-full h-1 transition-all",
@@ -204,7 +245,20 @@ export function Chapter1({ onComplete }: { onComplete?: () => void }) {
                       {/* Wire to Light */}
                       <div 
                         className="absolute right-full w-24 h-2 -translate-y-1/2 top-1/2 flex items-center justify-center cursor-pointer group"
-                        onClick={() => setLightConnected(!lightConnected)}
+                        onClick={() => {
+                          soundEffects.click();
+                          if (lightConnected) {
+                            soundEffects.disconnect();
+                            feedbackManager.showError('断开了照明线路！');
+                            setBlackboxAttempts(prev => prev + 1);
+                            recordError('chapter1');
+                          } else {
+                            soundEffects.connect();
+                            feedbackManager.showSuccess('连接照明线路！');
+                            recordSuccess();
+                          }
+                          setLightConnected(!lightConnected);
+                        }}
                       >
                         <div className={cn(
                           "w-full h-1 transition-all",
@@ -328,7 +382,49 @@ export function Chapter1({ onComplete }: { onComplete?: () => void }) {
                 <div className="mt-12 text-center">
                   {!isLocked ? (
                     <button 
-                      onClick={() => setIsLocked(true)}
+                      onClick={() => {
+                        soundEffects.click();
+                        setIsLocked(true);
+                        
+                        // 检查方案是否正确
+                        const isCorrect = POWER_OPTIONS[powerIdx].id === 'hybrid' && CONTROL_OPTIONS[controlIdx].id === 'light';
+                        
+                        if (isCorrect) {
+                          soundEffects.success();
+                          feedbackManager.showSuccess('方案验证通过！');
+                          
+                          // 根据黑箱法和筛选法的错误次数给分
+                          const totalAttempts = blackboxAttempts + screeningAttempts;
+                          if (totalAttempts === 0) {
+                            addScore(40, 'chapter1');
+                            feedbackManager.showScore(40);
+                          } else if (totalAttempts <= 2) {
+                            addScore(35, 'chapter1');
+                            feedbackManager.showScore(35);
+                          } else if (totalAttempts <= 4) {
+                            addScore(30, 'chapter1');
+                            feedbackManager.showScore(30);
+                          } else {
+                            addScore(25, 'chapter1');
+                            feedbackManager.showScore(25);
+                          }
+                        } else {
+                          soundEffects.error();
+                          feedbackManager.showError('方案不符合需求约束！');
+                          feedbackManager.showScore(-10);
+                          setScreeningAttempts(prev => prev + 1);
+                          recordError('chapter1');
+                          
+                          // 触发随机事件
+                          if (Math.random() < 0.3) {
+                            const event = eventGenerator.getRandomEvent('chapter1', 'trouble');
+                            if (event) {
+                              soundEffects.randomEvent();
+                              setRandomEvent(event);
+                            }
+                          }
+                        }
+                      }}
                       className="px-12 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded shadow-[0_0_20px_rgba(37,99,235,0.4)] transition-all text-lg tracking-widest"
                     >
                       锁定方案
@@ -346,7 +442,10 @@ export function Chapter1({ onComplete }: { onComplete?: () => void }) {
                           </div>
                           <div>
                             <button 
-                              onClick={() => setPhase('outro')}
+                              onClick={() => {
+                                soundEffects.chapterComplete();
+                                setPhase('outro');
+                              }}
                               className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded shadow-[0_0_20px_rgba(37,99,235,0.4)] transition-all"
                             >
                               生成设计图纸
