@@ -161,7 +161,7 @@ export function Chapter1({ onComplete }: { onComplete?: () => void }) {
                     <div className="absolute inset-0 opacity-20 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PHBhdGggZD0iTTAgMGg0MHY0MEgwVjB6bTIwIDIwYzAtMTEuMDQ2IDguOTU0LTIwIDIwLTIwczIwIDguOTU0IDIwIDIwLTguOTU0IDIwLTIwIDIwLTIwLTguOTU0LTIwLTIwem0wLTE4QTE4IDE4IDAgMCAwIDIgMjBhMTggMTggMCAwIDAgMTggMTggMTggMTggMCAwIDAgMTgtMThBMTggMTggMCAwIDAgMjAgMnoiIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSIgZmlsbC1ydWxlPSJldmVub2RkIi8+PC9zdmc+')] mix-blend-overlay" />
                     <div className="text-center">
                       {!speakerCut ? (
-                        <Glitch text="镇魂法器" className="text-2xl font-bold text-red-500" />
+                        <Glitch text="未知装置" className="text-2xl font-bold text-orange-500" />
                       ) : (
                         <span className="text-2xl font-bold text-blue-400 tracking-widest">控制中枢</span>
                       )}

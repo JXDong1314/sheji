@@ -470,9 +470,9 @@ export function Prologue({ onComplete }: { onComplete?: () => void }) {
               <div className="max-w-4xl w-full">
                 <h2 className="text-2xl font-bold mb-2 text-blue-400 flex items-center gap-2">
                   <FileText className="w-6 h-6" />
-                  档案袋：线索祛魅翻译
+                  档案袋：现象分析与术语匹配
                 </h2>
-                <p className="text-slate-400 mb-8 font-mono text-sm">将搜集到的恐怖线索，匹配到对应的工程术语中。先点击左侧线索，再点击右侧目标。</p>
+                <p className="text-slate-400 mb-8 font-mono text-sm">将收集到的现场线索，匹配到对应的工程术语中。先点击左侧线索，再点击右侧目标。</p>
 
                 <div className="grid grid-cols-2 gap-12">
                   {/* Clues List */}

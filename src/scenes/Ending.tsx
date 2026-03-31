@@ -248,8 +248,8 @@ export function Ending({ onRestart }: { onRestart?: () => void }) {
             transition={{ delay: 2 }}
             className="text-center mt-8 text-slate-500 text-sm"
           >
-            <p>《走近科学：幽灵山庄的午夜怪影》</p>
-            <p className="mt-1">一款寓教于乐的技术设计教学游戏</p>
+            <p>《技术设计方法论：互动教学游戏》</p>
+            <p className="mt-1">一款寓教于乐的工程设计教学游戏</p>
           </motion.div>
         </motion.div>
       </div>
