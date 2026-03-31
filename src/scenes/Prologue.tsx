@@ -68,7 +68,9 @@ export function Prologue({ onComplete }: { onComplete?: () => void }) {
   const [clues, setClues] = useState<Clue[]>([
     { id: 'bridge', label: '栏杆高度异常', desc: '断桥的栏杆低矮且破损，起不到防护作用。', found: false, icon: <AlertTriangle className="w-8 h-8 text-yellow-500" />, x: '25%', y: '55%' },
     { id: 'station', label: '枯水期经常停电', desc: '废弃的水电站，枯水期根本无法提供稳定的市电。', found: false, icon: <ZapOff className="w-8 h-8 text-blue-500" />, x: '75%', y: '35%' },
-    { id: 'chief', label: '村民夜间看急诊', desc: '老村长叹气：“村里老人多，半夜经常要去镇上看急诊，摸黑过桥太危险了。”', found: false, icon: <Search className="w-8 h-8 text-green-500" />, x: '50%', y: '70%' },
+    { id: 'chief', label: '村民夜间看急诊', desc: '老村长叹气："村里老人多，半夜经常要去镇上看急诊，摸黑过桥太危险了。"', found: false, icon: <Search className="w-8 h-8 text-green-500" />, x: '50%', y: '70%' },
+    { id: 'moss', label: '桥面湿滑有青苔', desc: '桥面常年潮湿，长满青苔，雨天更加湿滑危险。', found: false, icon: <AlertTriangle className="w-8 h-8 text-orange-500" />, x: '40%', y: '45%' },
+    { id: 'elderly', label: '老人视力不佳', desc: '村里多是老年人，夜间视力差，看不清路况。', found: false, icon: <Search className="w-8 h-8 text-purple-500" />, x: '60%', y: '60%' },
   ]);
 
   const [selectedClue, setSelectedClue] = useState<string | null>(null);
@@ -113,11 +115,13 @@ export function Prologue({ onComplete }: { onComplete?: () => void }) {
 
   const handleMatch = (targetId: string) => {
     if (selectedClue) {
-      // 检查是否正确匹配
+      // 检查是否正确匹配（5个线索）
       const isCorrect = 
         (selectedClue === 'chief' && targetId === 'req') ||
         (selectedClue === 'station' && targetId === 'const') ||
-        (selectedClue === 'bridge' && targetId === 'prob');
+        (selectedClue === 'bridge' && targetId === 'prob') ||
+        (selectedClue === 'moss' && targetId === 'env') ||
+        (selectedClue === 'elderly' && targetId === 'user');
       
       if (!isCorrect) {
         // 播放错误音效
@@ -280,7 +284,12 @@ export function Prologue({ onComplete }: { onComplete?: () => void }) {
     }
   };
 
-  const isPuzzleComplete = matches['chief'] === 'req' && matches['station'] === 'const' && matches['bridge'] === 'prob';
+  const isPuzzleComplete = 
+    matches['chief'] === 'req' && 
+    matches['station'] === 'const' && 
+    matches['bridge'] === 'prob' &&
+    matches['moss'] === 'env' &&
+    matches['elderly'] === 'user';
   
   // 完成谜题时的处理
   useEffect(() => {
@@ -290,10 +299,10 @@ export function Prologue({ onComplete }: { onComplete?: () => void }) {
       // 播放完成音效
       soundEffects.chapterComplete();
       
-      // 根据尝试次数给分
+      // 根据尝试次数给分（5个线索，难度更高）
       if (attempts === 0) {
-        addScore(25, 'prologue');
-        feedbackManager.showScore(25);
+        addScore(40, 'prologue'); // 完美表现：40分
+        feedbackManager.showScore(40);
         feedbackManager.showAchievement('需求分析师');
         const achievement = state.achievements['requirement_analyst'];
         unlockAchievement('requirement_analyst');
@@ -302,25 +311,28 @@ export function Prologue({ onComplete }: { onComplete?: () => void }) {
         // 完美表现的专家反馈
         setExpertFeedback({
           type: 'success',
-          message: '完美的需求分析！零失误完成所有匹配，展现了专业水准',
+          message: '完美的需求分析！零失误完成5个线索匹配，展现了卓越的专业水准',
           expert: '院士评审'
         });
         setShowExpertFeedback(true);
       } else if (attempts <= 2) {
-        addScore(20, 'prologue');
-        feedbackManager.showScore(20);
+        addScore(35, 'prologue'); // 优秀：35分
+        feedbackManager.showScore(35);
         setExpertFeedback({
           type: 'success',
-          message: '优秀的需求分析能力，方案合理可行',
+          message: '优秀的需求分析能力，全面考虑了各类因素',
           expert: '技术专家'
         });
         setShowExpertFeedback(true);
       } else if (attempts <= 4) {
-        addScore(15, 'prologue');
-        feedbackManager.showScore(15);
+        addScore(30, 'prologue'); // 良好：30分
+        feedbackManager.showScore(30);
+      } else if (attempts <= 6) {
+        addScore(25, 'prologue'); // 及格：25分
+        feedbackManager.showScore(25);
       } else {
-        addScore(10, 'prologue');
-        feedbackManager.showScore(10);
+        addScore(20, 'prologue'); // 勉强通过：20分
+        feedbackManager.showScore(20);
       }
       
       if (allCluesFound) {
@@ -584,14 +596,18 @@ export function Prologue({ onComplete }: { onComplete?: () => void }) {
                     {[
                       { id: 'req', label: '用户需求', desc: '需要安全照明' },
                       { id: 'const', label: '系统约束', desc: '不能完全依赖市电' },
-                      { id: 'prob', label: '发现问题', desc: '桥梁存在安全隐患' }
+                      { id: 'prob', label: '发现问题', desc: '桥梁存在安全隐患' },
+                      { id: 'env', label: '环境因素', desc: '外部环境影响' },
+                      { id: 'user', label: '用户特征', desc: '使用者特点' }
                     ].map(target => {
                       const matchedClueId = Object.keys(matches).find(key => matches[key] === target.id);
                       const matchedClue = clues.find(c => c.id === matchedClueId);
                       const isCorrect = 
                         (target.id === 'req' && matchedClueId === 'chief') ||
                         (target.id === 'const' && matchedClueId === 'station') ||
-                        (target.id === 'prob' && matchedClueId === 'bridge');
+                        (target.id === 'prob' && matchedClueId === 'bridge') ||
+                        (target.id === 'env' && matchedClueId === 'moss') ||
+                        (target.id === 'user' && matchedClueId === 'elderly');
 
                       return (
                         <div
