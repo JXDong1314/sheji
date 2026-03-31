@@ -10,6 +10,9 @@ import { Timer } from '../components/Timer';
 import { QualityRating } from '../components/QualityRating';
 import { ExpertFeedback } from '../components/ExpertFeedback';
 import { TechDashboard } from '../components/TechDashboard';
+import { RandomEvent, RandomEventGenerator, type RandomEvent as RandomEventType } from '../components/RandomEvent';
+import { FeedbackAnimation, feedbackManager, type Feedback } from '../components/FeedbackAnimation';
+import { soundEffects } from '../utils/soundEffects';
 import { useGame } from '../hooks/useGame';
 import { Search, ZapOff, AlertTriangle, FileText, CheckCircle2, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -29,7 +32,7 @@ interface Clue {
 }
 
 export function Prologue({ onComplete }: { onComplete?: () => void }) {
-  const { state, addScore, deductScore, unlockAchievement, recordAttempt } = useGame();
+  const { state, addScore, deductScore, unlockAchievement, recordAttempt, recordError, recordSuccess, resetChapterStats } = useGame();
   
   const [phase, setPhase] = useState<Phase>('intro');
   const [introStep, setIntroStep] = useState(0);
@@ -48,6 +51,17 @@ export function Prologue({ onComplete }: { onComplete?: () => void }) {
   const [qualityRating, setQualityRating] = useState(5);
   const [showExpertFeedback, setShowExpertFeedback] = useState(false);
   const [expertFeedback, setExpertFeedback] = useState({ type: 'info' as const, message: '', expert: '' });
+  
+  // 新增：随机事件和反馈系统
+  const [randomEvent, setRandomEvent] = useState<RandomEventType | null>(null);
+  const [feedback, setFeedback] = useState<Feedback | null>(null);
+  const [eventGenerator] = useState(() => new RandomEventGenerator());
+  
+  // 初始化时重置章节统计
+  useEffect(() => {
+    resetChapterStats();
+    soundEffects.setEnabled(true);
+  }, [resetChapterStats]);
   const [timerPaused, setTimerPaused] = useState(true);
   const [timeBonus, setTimeBonus] = useState(0);
   
@@ -84,7 +98,17 @@ export function Prologue({ onComplete }: { onComplete?: () => void }) {
   }, [state.unlockedAchievements, state.achievements]);
 
   const handleClueClick = (id: string) => {
+    soundEffects.click();
     setClues(prev => prev.map(c => c.id === id ? { ...c, found: true } : c));
+    
+    // 发现线索时有20%概率触发突发状况事件
+    if (Math.random() < 0.2) {
+      const event = eventGenerator.getRandomEvent('prologue', 'trouble');
+      if (event) {
+        soundEffects.randomEvent();
+        setRandomEvent(event);
+      }
+    }
   };
 
   const handleMatch = (targetId: string) => {
@@ -96,17 +120,22 @@ export function Prologue({ onComplete }: { onComplete?: () => void }) {
         (selectedClue === 'bridge' && targetId === 'prob');
       
       if (!isCorrect) {
+        // 播放错误音效
+        soundEffects.error();
+        
+        // 显示错误反馈动画
+        feedbackManager.showError('匹配错误！请重新思考线索与需求的关系');
+        feedbackManager.showScore(-5);
+        
         // 错误匹配 - 记录尝试并显示提示
         const newAttempts = attempts + 1;
         setAttempts(newAttempts);
         recordAttempt('prologue', 'requirement_matching', false, `错误匹配: ${selectedClue} -> ${targetId}`);
+        recordError('prologue'); // 使用新的惩罚系统
         
         // 降低质量评级
         const newRating = Math.max(1, qualityRating - 1);
         setQualityRating(newRating);
-        
-        // 增加扣分力度 - 每次错误扣5分
-        deductScore(5, 'prologue');
         
         // 显示专家反馈
         const feedback = getExpertFeedback(newRating, newAttempts);
@@ -120,14 +149,24 @@ export function Prologue({ onComplete }: { onComplete?: () => void }) {
         } else if (newAttempts === 2) {
           setHintLevel(2);
           setShowHint(true);
+          // 触发随机事件：专家访问
+          if (Math.random() < 0.3) {
+            const event = eventGenerator.getRandomEvent('prologue', 'expert');
+            if (event) {
+              soundEffects.randomEvent();
+              setRandomEvent(event);
+            }
+          }
         } else if (newAttempts >= 3) {
           setHintLevel(3);
           setShowHint(true);
+          soundEffects.warning();
         }
         
         // 质量不达标 - 强制重新开始
         if (newRating <= 1) {
           setTimeout(() => {
+            soundEffects.warning();
             alert('设计质量不达标！\n技术方案被专家组驳回\n需要重新进行需求分析\n-50分');
             deductScore(50, 'prologue');
             // 重置状态
@@ -145,6 +184,10 @@ export function Prologue({ onComplete }: { onComplete?: () => void }) {
       }
       
       // 正确匹配
+      soundEffects.match();
+      feedbackManager.showSuccess('匹配正确！');
+      recordSuccess(); // 重置连续错误
+      
       setMatches(prev => {
         const newMatches = { ...prev };
         Object.keys(newMatches).forEach(key => {
@@ -157,6 +200,15 @@ export function Prologue({ onComplete }: { onComplete?: () => void }) {
       });
       setSelectedClue(null);
       recordAttempt('prologue', 'requirement_matching', true);
+      
+      // 触发幸运事件（15%概率）
+      if (Math.random() < 0.15) {
+        const event = eventGenerator.getRandomEvent('prologue', 'lucky');
+        if (event) {
+          soundEffects.randomEvent();
+          setRandomEvent(event);
+        }
+      }
     } else {
       // Unmatch if already matched
       setMatches(prev => {
@@ -235,9 +287,14 @@ export function Prologue({ onComplete }: { onComplete?: () => void }) {
     if (isPuzzleComplete && phase === 'puzzle') {
       setTimerPaused(true); // 停止倒计时
       
+      // 播放完成音效
+      soundEffects.chapterComplete();
+      
       // 根据尝试次数给分
       if (attempts === 0) {
         addScore(25, 'prologue');
+        feedbackManager.showScore(25);
+        feedbackManager.showAchievement('需求分析师');
         const achievement = state.achievements['requirement_analyst'];
         unlockAchievement('requirement_analyst');
         setCurrentAchievement(achievement);
@@ -251,6 +308,7 @@ export function Prologue({ onComplete }: { onComplete?: () => void }) {
         setShowExpertFeedback(true);
       } else if (attempts <= 2) {
         addScore(20, 'prologue');
+        feedbackManager.showScore(20);
         setExpertFeedback({
           type: 'success',
           message: '优秀的需求分析能力，方案合理可行',
@@ -259,17 +317,25 @@ export function Prologue({ onComplete }: { onComplete?: () => void }) {
         setShowExpertFeedback(true);
       } else if (attempts <= 4) {
         addScore(15, 'prologue');
+        feedbackManager.showScore(15);
       } else {
         addScore(10, 'prologue');
+        feedbackManager.showScore(10);
       }
       
       if (allCluesFound) {
         const achievement = state.achievements['clue_hunter'];
         unlockAchievement('clue_hunter');
-        setTimeout(() => setCurrentAchievement(achievement), 500);
+        setTimeout(() => {
+          setCurrentAchievement(achievement);
+          feedbackManager.showAchievement('问题猎手');
+        }, 500);
       }
       
-      setTimeout(() => setPhase('outro'), 1500);
+      setTimeout(() => {
+        soundEffects.pageTransition();
+        setPhase('outro');
+      }, 1500);
     }
   }, [isPuzzleComplete, phase, attempts, allCluesFound, addScore, unlockAchievement, state.achievements]);
   
@@ -349,6 +415,18 @@ export function Prologue({ onComplete }: { onComplete?: () => void }) {
           expert={expertFeedback.expert}
           show={showExpertFeedback}
           onClose={() => setShowExpertFeedback(false)}
+        />
+        
+        {/* 随机事件 */}
+        <RandomEvent
+          event={randomEvent}
+          onClose={() => setRandomEvent(null)}
+        />
+        
+        {/* 反馈动画 */}
+        <FeedbackAnimation
+          feedback={feedback}
+          onComplete={() => setFeedback(null)}
         />
         
         {/* Header */}
