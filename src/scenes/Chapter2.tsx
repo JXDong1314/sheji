@@ -126,7 +126,7 @@ export function Chapter2({ onComplete }: { onComplete?: () => void }) {
 
   return (
     <SceneBackground scene="chapter2">
-      <div className="relative z-10 w-full h-screen text-slate-200 font-sans overflow-hidden crt flex flex-col">
+      <div className="relative z-10 w-full h-screen text-slate-200 font-sans overflow-hidden tech-grid flex flex-col">
         {/* Header */}
         <header className="p-4 border-b border-slate-800 flex justify-between items-center bg-black/50 backdrop-blur-sm">
           <div className="flex items-center gap-2">
@@ -180,7 +180,7 @@ export function Chapter2({ onComplete }: { onComplete?: () => void }) {
                   )}
 
                   {introStep >= 4 && (
-                    <p className="text-orange-400 font-mono text-sm mt-8">
+                    <p className="text-blue-400 font-mono text-sm mt-8">
                       <Typewriter text="> 任务：将混乱的民间描述转化为规范的技术文档。" onComplete={() => setTimeout(() => setPhase('language'), 500)} />
                     </p>
                   )}
@@ -243,7 +243,7 @@ export function Chapter2({ onComplete }: { onComplete?: () => void }) {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       onClick={handleLanguageConfirm}
-                      className="w-full px-8 py-4 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded shadow-[0_0_20px_rgba(234,88,12,0.4)] transition-all"
+                      className="w-full px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded shadow-[0_0_20px_rgba(59,130,246,0.4)] transition-all"
                     >
                       确认选择
                     </motion.button>
@@ -317,7 +317,7 @@ export function Chapter2({ onComplete }: { onComplete?: () => void }) {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       onClick={handleStandardConfirm}
-                      className="w-full px-8 py-4 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded shadow-[0_0_20px_rgba(234,88,12,0.4)] transition-all"
+                      className="w-full px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded shadow-[0_0_20px_rgba(59,130,246,0.4)] transition-all"
                     >
                       确认选择
                     </motion.button>
@@ -391,7 +391,7 @@ export function Chapter2({ onComplete }: { onComplete?: () => void }) {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       onClick={handleMaterialConfirm}
-                      className="w-full px-8 py-4 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded shadow-[0_0_20px_rgba(234,88,12,0.4)] transition-all"
+                      className="w-full px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded shadow-[0_0_20px_rgba(59,130,246,0.4)] transition-all"
                     >
                       确认选择
                     </motion.button>
@@ -432,14 +432,14 @@ export function Chapter2({ onComplete }: { onComplete?: () => void }) {
                     </p>
                   )}
                   {outroStep >= 2 && (
-                    <p className="text-orange-400 font-mono mt-8">
+                    <p className="text-blue-400 font-mono mt-8">
                       <Typewriter text="> 下一步：前往村口，检查新安装的路灯系统的人机工程问题。" speed={30} onComplete={() => setShowNextBtn(true)} />
                     </p>
                   )}
                   {showNextBtn && (
                     <button
                       onClick={onComplete}
-                      className="mt-8 px-8 py-3 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded shadow-[0_0_20px_rgba(234,88,12,0.4)] transition-all animate-fade-in"
+                      className="mt-8 px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded shadow-[0_0_20px_rgba(59,130,246,0.4)] transition-all animate-fade-in"
                     >
                       进入第三章
                     </button>

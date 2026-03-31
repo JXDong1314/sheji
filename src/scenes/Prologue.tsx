@@ -297,7 +297,7 @@ export function Prologue({ onComplete }: { onComplete?: () => void }) {
 
   return (
     <SceneBackground scene="prologue">
-      <div className="relative z-10 w-full h-screen text-slate-200 font-sans overflow-hidden crt flex flex-col">
+      <div className="relative z-10 w-full h-screen text-slate-200 font-sans overflow-hidden tech-grid flex flex-col">
         {/* 纯科学情感增强组件 */}
         {phase === 'puzzle' && (
           <>

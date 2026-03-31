@@ -122,7 +122,7 @@ export function Chapter3({ onComplete }: { onComplete?: () => void }) {
 
   return (
     <SceneBackground scene="chapter3">
-      <div className="relative z-10 w-full h-screen text-slate-200 font-sans overflow-hidden crt flex flex-col">
+      <div className="relative z-10 w-full h-screen text-slate-200 font-sans overflow-hidden tech-grid flex flex-col">
         {/* Header */}
         <header className="p-4 border-b border-slate-800 flex justify-between items-center bg-black/50 backdrop-blur-sm">
           <div className="flex items-center gap-2">
@@ -175,7 +175,7 @@ export function Chapter3({ onComplete }: { onComplete?: () => void }) {
                   )}
 
                   {introStep >= 4 && (
-                    <p className="text-purple-400 font-mono text-sm mt-8">
+                    <p className="text-blue-400 font-mono text-sm mt-8">
                       <Typewriter text="> 任务：从人机关系角度重新设计路灯系统。" onComplete={() => setTimeout(() => setPhase('analysis'), 500)} />
                     </p>
                   )}
@@ -227,7 +227,7 @@ export function Chapter3({ onComplete }: { onComplete?: () => void }) {
                                       : option.score >= 5
                                       ? "border-yellow-500 bg-yellow-900/20"
                                       : "border-red-500 bg-red-900/20"
-                                    : "border-purple-500 bg-purple-900/20"
+                                    : "border-blue-500 bg-blue-900/20"
                                   : "border-slate-600 bg-slate-800/50 hover:border-slate-500",
                                 confirmed && "cursor-not-allowed"
                               )}
@@ -253,7 +253,7 @@ export function Chapter3({ onComplete }: { onComplete?: () => void }) {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       onClick={handleConfirm}
-                      className="w-full max-w-md mx-auto block px-8 py-4 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded shadow-[0_0_20px_rgba(168,85,247,0.4)] transition-all"
+                      className="w-full max-w-md mx-auto block px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded shadow-[0_0_20px_rgba(59,130,246,0.4)] transition-all"
                     >
                       确认设计方案
                     </motion.button>
@@ -298,14 +298,14 @@ export function Chapter3({ onComplete }: { onComplete?: () => void }) {
                     </p>
                   )}
                   {outroStep >= 2 && (
-                    <p className="text-purple-400 font-mono mt-8">
+                    <p className="text-blue-400 font-mono mt-8">
                       <Typewriter text='> 所有谜题已解开，真相即将揭晓……' speed={30} onComplete={() => setShowNextBtn(true)} />
                     </p>
                   )}
                   {showNextBtn && (
                     <button
                       onClick={onComplete}
-                      className="mt-8 px-8 py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded shadow-[0_0_20px_rgba(168,85,247,0.4)] transition-all animate-fade-in"
+                      className="mt-8 px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded shadow-[0_0_20px_rgba(59,130,246,0.4)] transition-all animate-fade-in"
                     >
                       查看结局
                     </button>

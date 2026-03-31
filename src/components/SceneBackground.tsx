@@ -28,14 +28,17 @@ export function SceneBackground({ scene, className, overlay = true, children }: 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
           backgroundImage: `url(${SCENE_IMAGES[scene]})`,
-          filter: 'brightness(0.7) contrast(1.1)',
+          filter: 'brightness(0.6) contrast(1.2) saturate(0.8)',
         }}
       />
       
-      {/* 暗色叠加层（可选） */}
+      {/* 专业蓝色叠加层 */}
       {overlay && (
-        <div className="absolute inset-0 bg-black/60" />
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/80 via-slate-900/70 to-blue-950/60" />
       )}
+      
+      {/* 科技扫描线效果 */}
+      <div className="scan-line" />
       
       {/* 内容层 - 直接渲染children，保持原有布局 */}
       {children}

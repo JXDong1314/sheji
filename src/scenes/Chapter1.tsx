@@ -55,7 +55,7 @@ export function Chapter1({ onComplete }: { onComplete?: () => void }) {
 
   return (
     <SceneBackground scene="chapter1">
-      <div className="relative z-10 w-full h-screen text-slate-200 font-sans overflow-hidden crt flex flex-col">
+      <div className="relative z-10 w-full h-screen text-slate-200 font-sans overflow-hidden tech-grid flex flex-col">
         {/* Header */}
         <header className="p-4 border-b border-slate-800 flex justify-between items-center bg-black/50 backdrop-blur-sm">
         <div className="flex items-center gap-2">
