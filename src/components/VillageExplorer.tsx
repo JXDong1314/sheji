@@ -43,9 +43,22 @@ interface VillageExplorerProps {
   collectedClues: string[];
 }
 
-const TILE_SIZE = 40; // 每个格子的大小
-const MAP_WIDTH = 20; // 地图宽度（格子数）
-const MAP_HEIGHT = 15; // 地图高度（格子数）
+const TILE_SIZE = 48; // 每个格子的大小（增大以显示更多细节）
+const MAP_WIDTH = 18; // 地图宽度（格子数）
+const MAP_HEIGHT = 13; // 地图高度（格子数）
+
+// 粒子效果
+interface Particle {
+  id: number;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+  maxLife: number;
+  type: 'sparkle' | 'dust' | 'leaf';
+  color: string;
+}
 
 // NPC数据
 const NPCS: NPC[] = [
@@ -159,11 +172,15 @@ const OBSTACLES: Obstacle[] = [
 ];
 
 export function VillageExplorer({ onClueCollected, onAllCluesCollected, collectedClues }: VillageExplorerProps) {
-  const [playerX, setPlayerX] = useState(10);
-  const [playerY, setPlayerY] = useState(12);
-  const [direction, setDirection] = useState<'up' | 'down' | 'left' | 'right'>('up');
+  const [playerX, setPlayerX] = useState(9);
+  const [playerY, setPlayerY] = useState(6);
+  const [direction, setDirection] = useState<'up' | 'down' | 'left' | 'right'>('down');
   const [currentDialogue, setCurrentDialogue] = useState<{ npc: NPC; text: string } | null>(null);
   const [showControls, setShowControls] = useState(true);
+  const [particles, setParticles] = useState<Particle[]>([]);
+  const [isWalking, setIsWalking] = useState(false);
+  const [walkFrame, setWalkFrame] = useState(0);
+  const [cameraShake, setCameraShake] = useState(0);
 
   // 检查碰撞
   const checkCollision = useCallback((x: number, y: number): boolean => {
@@ -187,18 +204,75 @@ export function VillageExplorer({ onClueCollected, onAllCluesCollected, collecte
   }, []);
 
   // 移动玩家
-  const movePlayer = useCallback((dx: number, dy: number, newDirection: 'up' | 'down' | 'left' | 'right') => {
+  const movePlayer = (dx: number, dy: number, dir: 'up' | 'down' | 'left' | 'right') => {
     const newX = playerX + dx;
     const newY = playerY + dy;
     
-    setDirection(newDirection);
-    
-    if (!checkCollision(newX, newY)) {
-      setPlayerX(newX);
-      setPlayerY(newY);
-      soundEffects.click();
+    if (checkCollision(newX, newY)) {
+      soundEffects.error();
+      setCameraShake(5);
+      setTimeout(() => setCameraShake(0), 100);
+      return;
     }
-  }, [playerX, playerY, checkCollision]);
+    
+    setPlayerX(newX);
+    setPlayerY(newY);
+    setDirection(dir);
+    setIsWalking(true);
+    setTimeout(() => setIsWalking(false), 200);
+    
+    // 添加脚步尘土效果
+    addParticles(playerX, playerY, 'dust', 2);
+    
+    soundEffects.click();
+  };
+
+  // 粒子系统更新
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setParticles(prev => 
+        prev
+          .map(p => ({
+            ...p,
+            x: p.x + p.vx,
+            y: p.y + p.vy,
+            life: p.life - 1,
+            vy: p.vy + 0.1 // 重力
+          }))
+          .filter(p => p.life > 0)
+      );
+    }, 50);
+    return () => clearInterval(interval);
+  }, []);
+
+  // 行走动画
+  useEffect(() => {
+    if (isWalking) {
+      const interval = setInterval(() => {
+        setWalkFrame(prev => (prev + 1) % 4);
+      }, 150);
+      return () => clearInterval(interval);
+    }
+  }, [isWalking]);
+
+  // 添加粒子效果
+  const addParticles = useCallback((x: number, y: number, type: Particle['type'], count: number = 3) => {
+    const newParticles: Particle[] = [];
+    for (let i = 0; i < count; i++) {
+      newParticles.push({
+        id: Date.now() + Math.random(),
+        x: x * TILE_SIZE + TILE_SIZE / 2,
+        y: y * TILE_SIZE + TILE_SIZE / 2,
+        vx: (Math.random() - 0.5) * 2,
+        vy: (Math.random() - 0.5) * 2 - 1,
+        life: type === 'sparkle' ? 30 : 20,
+        maxLife: type === 'sparkle' ? 30 : 20,
+        type,
+        color: type === 'sparkle' ? '#ffd700' : type === 'dust' ? '#d4a574' : '#90ee90'
+      });
+    }
+    setParticles(prev => [...prev, ...newParticles]);
+  }, []);
 
   // 键盘控制
   useEffect(() => {
@@ -244,37 +318,36 @@ export function VillageExplorer({ onClueCollected, onAllCluesCollected, collecte
 
   // 检查NPC交互
   const checkNPCInteraction = useCallback(() => {
-    // 检查玩家周围是否有NPC
-    const nearbyNPC = NPCS.find(npc => {
-      const distance = Math.abs(npc.x - playerX) + Math.abs(npc.y - playerY);
-      return distance <= 1; // 相邻格子
-    });
+    const nearbyNPC = NPCS.find(
+      npc => Math.abs(npc.x - playerX) + Math.abs(npc.y - playerY) <= 1
+    );
 
     if (nearbyNPC) {
-      soundEffects.match();
-      
-      // 判断是否已收集该线索
       const hasCollected = collectedClues.includes(nearbyNPC.id);
       
-      if (hasCollected) {
-        // 已收集，显示后续对话
+      if (nearbyNPC.hasClue && !hasCollected) {
+        // 显示线索对话
         setCurrentDialogue({
           npc: nearbyNPC,
-          text: nearbyNPC.dialogues.afterClue || nearbyNPC.dialogues.initial
+          text: nearbyNPC.dialogues.clue!.text
         });
-      } else if (nearbyNPC.hasClue && nearbyNPC.dialogues.clue) {
-        // 未收集，显示线索对话
+        onClueCollected(nearbyNPC.dialogues.clue!.id, nearbyNPC.dialogues.clue!.label);
+        // 添加闪光粒子效果
+        addParticles(nearbyNPC.x, nearbyNPC.y, 'sparkle', 8);
+      } else if (hasCollected && nearbyNPC.dialogues.afterClue) {
+        // 显示收集后的对话
         setCurrentDialogue({
           npc: nearbyNPC,
-          text: nearbyNPC.dialogues.clue.text
+          text: nearbyNPC.dialogues.afterClue
         });
       } else {
-        // 无线索，显示初始对话
+        // 显示初始对话
         setCurrentDialogue({
           npc: nearbyNPC,
           text: nearbyNPC.dialogues.initial
         });
       }
+      soundEffects.success();
     }
   }, [playerX, playerY, collectedClues]);
 
@@ -475,6 +548,26 @@ export function VillageExplorer({ onClueCollected, onAllCluesCollected, collecte
           );
         })}
 
+        {/* 粒子效果层 */}
+        <div className="absolute inset-0 pointer-events-none z-30">
+          {particles.map(particle => (
+            <motion.div
+              key={particle.id}
+              className="absolute w-2 h-2 rounded-full"
+              style={{
+                left: particle.x,
+                top: particle.y,
+                backgroundColor: particle.color,
+                opacity: particle.life / particle.maxLife,
+                boxShadow: `0 0 ${particle.type === 'sparkle' ? '8px' : '4px'} ${particle.color}`
+              }}
+              initial={{ scale: 1 }}
+              animate={{ scale: particle.type === 'sparkle' ? [1, 1.5, 0.5] : [1, 0.8, 0.3] }}
+              transition={{ duration: 0.5 }}
+            />
+          ))}
+        </div>
+
         {/* 玩家 */}
         <motion.div
           className="absolute z-20 flex items-center justify-center"
@@ -482,12 +575,19 @@ export function VillageExplorer({ onClueCollected, onAllCluesCollected, collecte
             left: playerX * TILE_SIZE,
             top: playerY * TILE_SIZE,
             width: TILE_SIZE,
-            height: TILE_SIZE
+            height: TILE_SIZE,
+            transform: `translateX(${cameraShake}px)`
           }}
           animate={{
-            rotate: direction === 'left' ? -90 : direction === 'right' ? 90 : direction === 'down' ? 180 : 0
+            rotate: direction === 'left' ? -90 : direction === 'right' ? 90 : direction === 'down' ? 180 : 0,
+            y: isWalking ? [0, -4, 0] : 0
           }}
-          transition={{ type: "spring", stiffness: 500, damping: 30 }}
+          transition={{ 
+            type: "spring", 
+            stiffness: 500, 
+            damping: 30,
+            y: { duration: 0.2 }
+          }}
         >
           {/* 玩家光环 */}
           <motion.div
@@ -508,6 +608,27 @@ export function VillageExplorer({ onClueCollected, onAllCluesCollected, collecte
             {getPlayerSprite()}
           </div>
         </motion.div>
+
+        {/* CRT扫描线效果 */}
+        <div className="absolute inset-0 pointer-events-none z-40 opacity-10">
+          <div 
+            className="absolute inset-0"
+            style={{
+              backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.3) 2px, rgba(0, 0, 0, 0.3) 4px)',
+              animation: 'scanline 8s linear infinite'
+            }}
+          />
+        </div>
+
+        {/* 像素化滤镜效果 */}
+        <div className="absolute inset-0 pointer-events-none z-40 mix-blend-overlay opacity-5">
+          <div 
+            className="absolute inset-0"
+            style={{
+              backgroundImage: 'repeating-conic-gradient(rgba(255,255,255,0.1) 0% 25%, transparent 0% 50%) 50% / 4px 4px'
+            }}
+          />
+        </div>
       </div>
 
       {/* 对话框 */}
