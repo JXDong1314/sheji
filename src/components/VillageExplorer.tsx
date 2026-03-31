@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { User, MessageCircle, MapPin, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { soundEffects } from '../utils/soundEffects';
 import { cn } from '../lib/utils';
+import { useGeneratedImages } from '../hooks/useGeneratedImages';
 
 // NPC角色定义
 interface NPC {
@@ -181,6 +182,9 @@ export function VillageExplorer({ onClueCollected, onAllCluesCollected, collecte
   const [isWalking, setIsWalking] = useState(false);
   const [walkFrame, setWalkFrame] = useState(0);
   const [cameraShake, setCameraShake] = useState(0);
+  
+  // 加载生成的图片
+  const { images, loading: imagesLoading, progress } = useGeneratedImages();
 
   // 检查碰撞
   const checkCollision = useCallback((x: number, y: number): boolean => {
@@ -386,6 +390,57 @@ export function VillageExplorer({ onClueCollected, onAllCluesCollected, collecte
     }
   };
 
+  // 图片加载中界面
+  if (imagesLoading) {
+    return (
+      <div className="relative w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-950 via-slate-900 to-purple-950 overflow-hidden">
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute top-0 left-0 w-96 h-96 bg-blue-500 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-500 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        </div>
+        
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="relative z-10 text-center"
+        >
+          <div className="mb-8">
+            <div className="text-6xl mb-4 animate-bounce">🎨</div>
+            <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400 mb-2">
+              正在生成像素艺术
+            </h2>
+            <p className="text-slate-400 text-lg">
+              使用豆包AI生成精美的游戏图片...
+            </p>
+          </div>
+          
+          {/* 进度条 */}
+          <div className="w-96 max-w-[90vw] mx-auto">
+            <div className="flex items-center justify-between mb-2 text-sm text-slate-300">
+              <span>生成进度</span>
+              <span className="font-bold text-cyan-400">{Math.round(progress)}%</span>
+            </div>
+            <div className="w-full h-3 bg-slate-800 rounded-full overflow-hidden border border-slate-700">
+              <motion.div
+                className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-cyan-500 shadow-[0_0_20px_rgba(59,130,246,0.8)]"
+                initial={{ width: 0 }}
+                animate={{ width: `${progress}%` }}
+                transition={{ type: "spring", stiffness: 50, damping: 15 }}
+              />
+            </div>
+            
+            <div className="mt-6 text-xs text-slate-500 space-y-1">
+              <p>✨ 正在生成NPC角色图片</p>
+              <p>🏠 正在生成建筑和场景</p>
+              <p>🌳 正在生成自然元素</p>
+              <p className="text-yellow-400 mt-3">⏱️ 首次加载需要1-2分钟，之后会自动缓存</p>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
     <div className="relative w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-950 via-slate-900 to-purple-950 overflow-hidden">
       {/* 背景装饰 */}
@@ -394,6 +449,14 @@ export function VillageExplorer({ onClueCollected, onAllCluesCollected, collecte
         <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-500 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
         <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-cyan-500 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
       </div>
+      
+      {/* 背景图片 */}
+      {images['village-bg'] && (
+        <div 
+          className="absolute inset-0 opacity-30 bg-cover bg-center"
+          style={{ backgroundImage: `url(${images['village-bg']})` }}
+        />
+      )}
       
       {/* 地图容器 */}
       <div 
@@ -496,10 +559,19 @@ export function VillageExplorer({ onClueCollected, onAllCluesCollected, collecte
               
               {/* NPC头像 */}
               <div className={cn(
-                "text-3xl relative z-10 transition-all duration-300",
+                "relative z-10 transition-all duration-300 w-12 h-12 flex items-center justify-center",
                 isNearby && "drop-shadow-[0_0_15px_rgba(59,130,246,0.8)]"
               )}>
-                {npc.avatar}
+                {images[`npc-${npc.id}`] ? (
+                  <img 
+                    src={images[`npc-${npc.id}`]} 
+                    alt={npc.name}
+                    className="w-full h-full object-contain pixel-perfect"
+                    style={{ imageRendering: 'pixelated' }}
+                  />
+                ) : (
+                  <span className="text-3xl">{npc.avatar}</span>
+                )}
               </div>
               
               {/* NPC名字 */}
@@ -604,8 +676,17 @@ export function VillageExplorer({ onClueCollected, onAllCluesCollected, collecte
           />
           
           {/* 玩家角色 */}
-          <div className="text-4xl relative z-10 drop-shadow-[0_0_20px_rgba(6,182,212,1)]">
-            {getPlayerSprite()}
+          <div className="relative z-10 drop-shadow-[0_0_20px_rgba(6,182,212,1)] w-12 h-12 flex items-center justify-center">
+            {images['player'] ? (
+              <img 
+                src={images['player']} 
+                alt="玩家"
+                className="w-full h-full object-contain pixel-perfect"
+                style={{ imageRendering: 'pixelated' }}
+              />
+            ) : (
+              <span className="text-4xl">{getPlayerSprite()}</span>
+            )}
           </div>
         </motion.div>
 
