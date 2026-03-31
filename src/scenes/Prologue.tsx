@@ -1,0 +1,445 @@
+import React, { useState, useEffect } from 'react';
+import { Flashlight } from '../components/Flashlight';
+import { Typewriter } from '../components/Typewriter';
+import { Glitch } from '../components/Glitch';
+import { HintBox } from '../components/HintBox';
+import { SceneBackground } from '../components/SceneBackground';
+import { ScoreDisplay } from '../components/ScoreDisplay';
+import { AchievementToast } from '../components/AchievementToast';
+import { useGame } from '../hooks/useGame';
+import { Search, ZapOff, AlertTriangle, FileText, CheckCircle2, ArrowRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { cn } from '../lib/utils';
+import type { Achievement } from '../types/game';
+
+type Phase = 'intro' | 'explore' | 'puzzle' | 'outro';
+
+interface Clue {
+  id: string;
+  label: string;
+  found: boolean;
+  icon: React.ReactNode;
+  x: string;
+  y: string;
+  desc: string;
+}
+
+export function Prologue({ onComplete }: { onComplete?: () => void }) {
+  const { state, addScore, deductScore, unlockAchievement, recordAttempt } = useGame();
+  
+  const [phase, setPhase] = useState<Phase>('intro');
+  const [introStep, setIntroStep] = useState(0);
+  const [outroStep, setOutroStep] = useState(0);
+  const [showNextBtn, setShowNextBtn] = useState(false);
+  
+  // 失败提示系统状态
+  const [attempts, setAttempts] = useState(0);
+  const [showHint, setShowHint] = useState(false);
+  const [hintLevel, setHintLevel] = useState<1 | 2 | 3>(1);
+  
+  // 成就弹窗状态
+  const [currentAchievement, setCurrentAchievement] = useState<Achievement | null>(null);
+  
+  const [clues, setClues] = useState<Clue[]>([
+    { id: 'bridge', label: '栏杆高度异常', desc: '断桥的栏杆低矮且破损，起不到防护作用。', found: false, icon: <AlertTriangle className="w-8 h-8 text-yellow-500" />, x: '25%', y: '55%' },
+    { id: 'station', label: '枯水期经常停电', desc: '废弃的水电站，枯水期根本无法提供稳定的市电。', found: false, icon: <ZapOff className="w-8 h-8 text-blue-500" />, x: '75%', y: '35%' },
+    { id: 'chief', label: '村民夜间看急诊', desc: '老村长叹气：“村里老人多，半夜经常要去镇上看急诊，摸黑过桥太危险了。”', found: false, icon: <Search className="w-8 h-8 text-green-500" />, x: '50%', y: '70%' },
+  ]);
+
+  const [selectedClue, setSelectedClue] = useState<string | null>(null);
+  const [matches, setMatches] = useState<Record<string, string>>({});
+
+  const allCluesFound = clues.every(c => c.found);
+  
+  useEffect(() => {
+    if (phase === 'explore' && allCluesFound) {
+      setTimeout(() => setPhase('puzzle'), 2000);
+    }
+  }, [allCluesFound, phase]);
+
+  const handleClueClick = (id: string) => {
+    setClues(prev => prev.map(c => c.id === id ? { ...c, found: true } : c));
+  };
+
+  const handleMatch = (targetId: string) => {
+    if (selectedClue) {
+      // 检查是否正确匹配
+      const isCorrect = 
+        (selectedClue === 'chief' && targetId === 'req') ||
+        (selectedClue === 'station' && targetId === 'const') ||
+        (selectedClue === 'bridge' && targetId === 'prob');
+      
+      if (!isCorrect) {
+        // 错误匹配 - 记录尝试并显示提示
+        const newAttempts = attempts + 1;
+        setAttempts(newAttempts);
+        recordAttempt('prologue', 'requirement_matching', false, `错误匹配: ${selectedClue} -> ${targetId}`);
+        // 增加扣分力度 - 每次错误扣3分
+        deductScore(3, 'prologue');
+        
+        // 根据尝试次数显示不同级别的提示
+        if (newAttempts === 1) {
+          setHintLevel(1);
+          setShowHint(true);
+        } else if (newAttempts === 2) {
+          setHintLevel(2);
+          setShowHint(true);
+        } else if (newAttempts >= 3) {
+          setHintLevel(3);
+          setShowHint(true);
+        }
+        
+        // 不保存错误匹配
+        setSelectedClue(null);
+        return;
+      }
+      
+      // 正确匹配
+      setMatches(prev => {
+        const newMatches = { ...prev };
+        Object.keys(newMatches).forEach(key => {
+          if (newMatches[key] === targetId) {
+            delete newMatches[key];
+          }
+        });
+        newMatches[selectedClue] = targetId;
+        return newMatches;
+      });
+      setSelectedClue(null);
+      recordAttempt('prologue', 'requirement_matching', true);
+    } else {
+      // Unmatch if already matched
+      setMatches(prev => {
+        const newMatches = { ...prev };
+        Object.keys(newMatches).forEach(key => {
+          if (newMatches[key] === targetId) {
+            delete newMatches[key];
+          }
+        });
+        return newMatches;
+      });
+    }
+  };
+
+  const isPuzzleComplete = matches['chief'] === 'req' && matches['station'] === 'const' && matches['bridge'] === 'prob';
+  
+  // 完成谜题时的处理
+  useEffect(() => {
+    if (isPuzzleComplete && phase === 'puzzle') {
+      // 根据尝试次数给分
+      if (attempts === 0) {
+        addScore(25, 'prologue');
+        const achievement = state.achievements['requirement_analyst'];
+        unlockAchievement('requirement_analyst');
+        setCurrentAchievement(achievement);
+      } else if (attempts <= 2) {
+        addScore(20, 'prologue');
+      } else if (attempts <= 4) {
+        addScore(15, 'prologue');
+      } else {
+        addScore(10, 'prologue');
+      }
+      
+      if (allCluesFound) {
+        const achievement = state.achievements['clue_hunter'];
+        unlockAchievement('clue_hunter');
+        setTimeout(() => setCurrentAchievement(achievement), 500);
+      }
+    }
+  }, [isPuzzleComplete, phase, attempts, allCluesFound, addScore, unlockAchievement, state.achievements]);
+  
+  // 提示消息
+  const getHintMessage = () => {
+    if (hintLevel === 1) {
+      return '似乎有些不对劲……再仔细想想？';
+    } else if (hintLevel === 2) {
+      return '注意区分"用户需求"（谁需要什么）和"系统约束"（环境限制）。';
+    } else {
+      return '让我们回顾一下需求分析的核心概念。';
+    }
+  };
+  
+  const getKnowledgePoint = () => {
+    if (hintLevel === 3) {
+      return {
+        title: '需求分析',
+        content: '需求分析包括：用户需求（关注使用者的需要）、系统约束（环境和资源限制）、问题定义（识别核心问题）。',
+        example: '• 用户需求：村民夜间看急诊需要安全照明\n• 系统约束：枯水期经常停电，不能完全依赖市电\n• 发现问题：断桥栏杆存在安全隐患',
+      };
+    }
+    return undefined;
+  };
+
+  return (
+    <SceneBackground scene="prologue">
+      <div className="relative z-10 w-full h-screen text-slate-200 font-sans overflow-hidden crt flex flex-col">
+        {/* Header */}
+        <header className="p-4 border-b border-slate-800 flex justify-between items-center bg-black/50 backdrop-blur-sm">
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full bg-red-600" />
+          <span className="font-mono text-sm tracking-widest text-slate-400">非正常现象科学调查局 // 档案编号: 001</span>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="font-mono text-xs text-slate-500">
+            {phase === 'intro' && 'SYS.INIT'}
+            {phase === 'explore' && 'SCANNING...'}
+            {phase === 'puzzle' && 'DATA.ANALYSIS'}
+            {phase === 'outro' && 'CASE.UPDATED'}
+          </div>
+          <ScoreDisplay score={state.totalScore} />
+        </div>
+      </header>
+      
+      {/* 成就解锁弹窗 */}
+      <AchievementToast 
+        achievement={currentAchievement} 
+        onClose={() => setCurrentAchievement(null)} 
+      />
+
+      {/* Main Content */}
+      <main className="flex-1 relative">
+        <AnimatePresence mode="wait">
+          
+          {/* INTRO PHASE */}
+          {phase === 'intro' && (
+            <motion.div 
+              key="intro"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 flex flex-col items-center justify-center p-8 max-w-3xl mx-auto text-lg leading-relaxed"
+            >
+              <div className="space-y-6 min-h-[200px]">
+                {introStep >= 0 && (
+                  <p><Typewriter text="每逢月黑风高之夜，李家坳村口的断桥边总会闪烁着惨白的" onComplete={() => setTimeout(() => setIntroStep(1), 500)} />
+                  {introStep >= 1 && <Glitch text="鬼火" className="mx-1" />}
+                  {introStep >= 1 && <Typewriter text="，伴随着摄人心魄的落水声……" onComplete={() => setTimeout(() => setIntroStep(2), 1000)} />}</p>
+                )}
+                
+                {introStep >= 2 && (
+                  <p><Typewriter text="已经有三位起早贪黑的村民在这里遭遇不测。这究竟是前世的诅咒，还是" onComplete={() => setTimeout(() => setIntroStep(3), 500)} />
+                  {introStep >= 3 && <Glitch text="水鬼的索命" className="mx-1" />}
+                  {introStep >= 3 && <Typewriter text="？" onComplete={() => setTimeout(() => setIntroStep(4), 1000)} />}</p>
+                )}
+
+                {introStep >= 4 && (
+                  <p className="text-blue-400 font-mono text-sm mt-8">
+                    <Typewriter text="> 任务：前往现场调查，搜集线索。" onComplete={() => setTimeout(() => setPhase('explore'), 500)} />
+                  </p>
+                )}
+              </div>
+            </motion.div>
+          )}
+
+          {/* EXPLORE PHASE */}
+          {phase === 'explore' && (
+            <motion.div 
+              key="explore"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0"
+            >
+              <Flashlight active={!allCluesFound}>
+                <div className="w-full h-full relative bg-slate-900/20">
+                  {/* Background hints */}
+                  <div className="absolute inset-0 opacity-10 pointer-events-none" style={{
+                    backgroundImage: 'radial-gradient(circle at 50% 50%, #1e293b 0%, #000 100%)'
+                  }} />
+                  
+                  {clues.map((clue) => (
+                    <motion.button
+                      key={clue.id}
+                      className={cn(
+                        "absolute p-4 rounded-full transition-all duration-300",
+                        clue.found ? "bg-slate-800/80 border border-slate-600" : "hover:bg-white/20 hover:shadow-lg"
+                      )}
+                      style={{ left: clue.x, top: clue.y, transform: 'translate(-50%, -50%)' }}
+                      onClick={() => handleClueClick(clue.id)}
+                      whileHover={{ scale: 1.15 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      {clue.icon}
+                      {clue.found && (
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-48 bg-black/90 border border-slate-700 p-2 text-xs text-slate-300 rounded shadow-xl z-20">
+                          <p className="font-bold text-white mb-1">{clue.label}</p>
+                          <p>{clue.desc}</p>
+                        </div>
+                      )}
+                    </motion.button>
+                  ))}
+
+                  {/* UI Overlay */}
+                  <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-center pointer-events-none">
+                    <p className="font-mono text-sm text-slate-400 bg-black/50 px-4 py-2 rounded-full backdrop-blur">
+                      {allCluesFound ? "线索收集完毕，准备进行分析..." : "在黑暗中移动鼠标/手指寻找线索"}
+                    </p>
+                  </div>
+                </div>
+              </Flashlight>
+            </motion.div>
+          )}
+
+          {/* PUZZLE PHASE */}
+          {phase === 'puzzle' && (
+            <motion.div 
+              key="puzzle"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 flex flex-col items-center justify-center p-8 bg-slate-950"
+            >
+              <div className="max-w-4xl w-full">
+                <h2 className="text-2xl font-bold mb-2 text-blue-400 flex items-center gap-2">
+                  <FileText className="w-6 h-6" />
+                  档案袋：线索祛魅翻译
+                </h2>
+                <p className="text-slate-400 mb-8 font-mono text-sm">将搜集到的恐怖线索，匹配到对应的工程术语中。先点击左侧线索，再点击右侧目标。</p>
+
+                <div className="grid grid-cols-2 gap-12">
+                  {/* Clues List */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-slate-300 border-b border-slate-800 pb-2">现场线索</h3>
+                    {clues.map(clue => {
+                      const isMatched = Object.values(matches).includes(clue.id);
+                      return (
+                        <motion.button
+                          key={clue.id}
+                          onClick={() => !isMatched && setSelectedClue(clue.id)}
+                          className={cn(
+                            "w-full text-left p-4 rounded border transition-all",
+                            isMatched ? "bg-slate-900 border-slate-800 text-slate-600 cursor-not-allowed" :
+                            selectedClue === clue.id ? "bg-blue-900/30 border-blue-500 text-blue-300 shadow-[0_0_15px_rgba(59,130,246,0.2)]" :
+                            "bg-slate-900/50 border-slate-700 text-slate-300 hover:border-slate-500"
+                          )}
+                        >
+                          <div className="flex items-center gap-3">
+                            {clue.icon}
+                            <span>{clue.label}</span>
+                          </div>
+                        </motion.button>
+                      )
+                    })}
+                  </div>
+
+                  {/* Targets List */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-slate-300 border-b border-slate-800 pb-2">技术设计要素</h3>
+                    {[
+                      { id: 'req', label: '用户需求', desc: '需要安全照明' },
+                      { id: 'const', label: '系统约束', desc: '不能完全依赖市电' },
+                      { id: 'prob', label: '发现问题', desc: '桥梁存在安全隐患' }
+                    ].map(target => {
+                      const matchedClueId = Object.keys(matches).find(key => matches[key] === target.id);
+                      const matchedClue = clues.find(c => c.id === matchedClueId);
+                      const isCorrect = 
+                        (target.id === 'req' && matchedClueId === 'chief') ||
+                        (target.id === 'const' && matchedClueId === 'station') ||
+                        (target.id === 'prob' && matchedClueId === 'bridge');
+
+                      return (
+                        <div
+                          key={target.id}
+                          onClick={() => handleMatch(target.id)}
+                          className={cn(
+                            "w-full p-4 rounded border-2 border-dashed transition-all",
+                            matchedClue ? (isCorrect ? "bg-green-900/20 border-green-500/50 cursor-pointer" : "bg-red-900/20 border-red-500/50 cursor-pointer") :
+                            selectedClue ? "border-blue-500/50 bg-blue-900/10 cursor-pointer hover:bg-blue-900/20" :
+                            "border-slate-800 bg-black/50"
+                          )}
+                        >
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="font-bold text-slate-200">{target.label}</span>
+                            <span className="text-xs text-slate-500">{target.desc}</span>
+                          </div>
+                          <div className="min-h-[40px] flex items-center">
+                            {matchedClue ? (
+                              <div className="flex items-center gap-2 text-sm text-slate-300">
+                                <ArrowRight className="w-4 h-4 text-slate-500" />
+                                {matchedClue.label}
+                                {isCorrect ? <CheckCircle2 className="w-4 h-4 text-green-500 ml-2" /> : <AlertTriangle className="w-4 h-4 text-red-500 ml-2" />}
+                              </div>
+                            ) : (
+                              <span className="text-sm text-slate-600 italic">等待匹配...</span>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* 提示框 */}
+                {showHint && (
+                  <div className="mt-8">
+                    <HintBox
+                      level={hintLevel}
+                      message={getHintMessage()}
+                      knowledgePoint={getKnowledgePoint()}
+                      onClose={() => setShowHint(false)}
+                    />
+                  </div>
+                )}
+
+                {isPuzzleComplete && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-12 text-center"
+                  >
+                    <button 
+                      onClick={() => setPhase('outro')}
+                      className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded shadow-[0_0_20px_rgba(37,99,235,0.4)] transition-all"
+                    >
+                      生成分析报告
+                    </button>
+                  </motion.div>
+                )}
+              </div>
+            </motion.div>
+          )}
+
+          {/* OUTRO PHASE */}
+          {phase === 'outro' && (
+            <motion.div 
+              key="outro"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center"
+            >
+              <CheckCircle2 className="w-16 h-16 text-green-500 mb-6" />
+              <h2 className="text-3xl font-bold text-white mb-4 tracking-widest">序章 完成</h2>
+              <div className="max-w-2xl text-slate-300 space-y-4 leading-relaxed">
+                {outroStep >= 0 && (
+                  <p>
+                    <Typewriter text="经过科学的分析，所谓的“水鬼”不过是村民在黑暗中对未知危险的恐惧投射。" speed={30} onComplete={() => setOutroStep(1)} />
+                  </p>
+                )}
+                {outroStep >= 1 && (
+                  <p>
+                    <Typewriter text="真正的罪魁祸首，是缺失的照明设施和危险的桥梁结构。" speed={30} onComplete={() => setOutroStep(2)} />
+                  </p>
+                )}
+                {outroStep >= 2 && (
+                  <p className="text-blue-400 font-mono mt-8">
+                    <Typewriter text="> 下一步：前往疯老头的住处，调查那个发出怪叫的“镇魂法器”。" speed={30} onComplete={() => setShowNextBtn(true)} />
+                  </p>
+                )}
+                {showNextBtn && (
+                  <button
+                    onClick={onComplete}
+                    className="mt-8 px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded shadow-[0_0_20px_rgba(37,99,235,0.4)] transition-all animate-fade-in"
+                  >
+                    进入第一章
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          )}
+
+        </AnimatePresence>
+      </main>
+      </div>
+    </SceneBackground>
+  );
+}
