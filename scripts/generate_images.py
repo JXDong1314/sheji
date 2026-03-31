@@ -7,16 +7,9 @@ from openai import OpenAI
 import time
 
 # API配置
-API_KEY = os.getenv("DOUBAO_API_KEY", "")  # 从环境变量读取API密钥
+API_KEY = "01b50cb8-cdd8-49bf-8c6c-9aa97b25976a"  # 豆包API密钥
 BASE_URL = "https://ark.cn-beijing.volces.com/api/v3"
 MODEL = "doubao-seedream-4-5-251128"
-
-if not API_KEY:
-    print("错误：未设置 DOUBAO_API_KEY 环境变量")
-    print("请设置环境变量后再运行：")
-    print("  Windows: set DOUBAO_API_KEY=your_api_key")
-    print("  Linux/Mac: export DOUBAO_API_KEY=your_api_key")
-    exit(1)
 
 # 初始化客户端
 client = OpenAI(

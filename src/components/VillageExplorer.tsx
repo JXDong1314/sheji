@@ -389,8 +389,24 @@ export function VillageExplorer({ onClueCollected, onAllCluesCollected, collecte
 
   return (
     <div className="relative w-full h-full flex items-center justify-center bg-gradient-to-br from-indigo-950 via-slate-900 to-purple-950 overflow-hidden">
+      {/* 像素风格背景纹理 */}
+      <div className="absolute inset-0 opacity-30">
+        {/* 草地纹理 */}
+        <div className="absolute inset-0 bg-gradient-to-br from-green-900/20 via-emerald-800/20 to-green-900/20" />
+        {/* 像素网格效果 */}
+        <div 
+          className="absolute inset-0"
+          style={{
+            backgroundImage: `
+              repeating-linear-gradient(0deg, transparent, transparent 8px, rgba(34, 197, 94, 0.1) 8px, rgba(34, 197, 94, 0.1) 9px),
+              repeating-linear-gradient(90deg, transparent, transparent 8px, rgba(34, 197, 94, 0.1) 8px, rgba(34, 197, 94, 0.1) 9px)
+            `
+          }}
+        />
+      </div>
+      
       {/* 背景装饰 */}
-      <div className="absolute inset-0 opacity-20">
+      <div className="absolute inset-0 opacity-15">
         <div className="absolute top-0 left-0 w-96 h-96 bg-blue-500 rounded-full blur-3xl animate-pulse" />
         <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-500 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
         <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-cyan-500 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
