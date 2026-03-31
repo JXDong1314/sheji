@@ -8,6 +8,9 @@ import { Glitch } from '../components/Glitch';
 import { SceneBackground } from '../components/SceneBackground';
 import { ScoreDisplay } from '../components/ScoreDisplay';
 import { AchievementToast } from '../components/AchievementToast';
+import { RandomEvent, RandomEventGenerator, type RandomEvent as RandomEventType } from '../components/RandomEvent';
+import { FeedbackAnimation, feedbackManager, type Feedback } from '../components/FeedbackAnimation';
+import { soundEffects } from '../utils/soundEffects';
 import { useGame } from '../hooks/useGame';
 import { FileText, Ruler, CheckCircle2, Hammer, Wrench, AlertCircle, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -38,7 +41,7 @@ const MATERIAL_OPTIONS = [
 ];
 
 export function Chapter2({ onComplete }: { onComplete?: () => void }) {
-  const { state, addScore, unlockAchievement } = useGame();
+  const { state, addScore, unlockAchievement, recordError, recordSuccess, resetChapterStats } = useGame();
   
   const [phase, setPhase] = useState<Phase>('intro');
   const [introStep, setIntroStep] = useState(0);
@@ -47,6 +50,22 @@ export function Chapter2({ onComplete }: { onComplete?: () => void }) {
   
   // 成就弹窗状态
   const [currentAchievement, setCurrentAchievement] = useState<Achievement | null>(null);
+  
+  // 随机事件和反馈系统
+  const [randomEvent, setRandomEvent] = useState<RandomEventType | null>(null);
+  const [feedback, setFeedback] = useState<Feedback | null>(null);
+  const [eventGenerator] = useState(() => new RandomEventGenerator());
+  
+  // 错误追踪
+  const [languageAttempts, setLanguageAttempts] = useState(0);
+  const [standardAttempts, setStandardAttempts] = useState(0);
+  const [optimizeAttempts, setOptimizeAttempts] = useState(0);
+  
+  // 初始化时重置章节统计
+  useEffect(() => {
+    resetChapterStats();
+    soundEffects.setEnabled(true);
+  }, [resetChapterStats]);
   
   // 技术语言阶段
   const [selectedLanguage, setSelectedLanguage] = useState<string | null>(null);
@@ -89,36 +108,81 @@ export function Chapter2({ onComplete }: { onComplete?: () => void }) {
   }, [phase]);
 
   const handleLanguageConfirm = () => {
+    soundEffects.click();
     const option = LANGUAGE_OPTIONS.find(o => o.id === selectedLanguage);
     if (option?.correct) {
+      soundEffects.success();
+      feedbackManager.showSuccess('技术语言规范正确！');
       addScore(20, 'chapter2');
+      feedbackManager.showScore(20);
+      recordSuccess();
       const achievement = state.achievements['tech_language_master'];
       unlockAchievement('tech_language_master');
       setCurrentAchievement(achievement);
     } else {
+      soundEffects.error();
+      feedbackManager.showError('技术语言不够规范');
       addScore(5, 'chapter2');
+      feedbackManager.showScore(5);
+      setLanguageAttempts(prev => prev + 1);
+      recordError('chapter2');
+      
+      // 触发随机事件
+      if (Math.random() < 0.3) {
+        const event = eventGenerator.getRandomEvent('chapter1', 'trouble');
+        if (event) {
+          soundEffects.randomEvent();
+          setRandomEvent(event);
+        }
+      }
     }
     setLanguageConfirmed(true);
   };
 
   const handleStandardConfirm = () => {
+    soundEffects.click();
     const option = STANDARD_OPTIONS.find(o => o.id === selectedStandard);
     if (option?.correct) {
+      soundEffects.success();
+      feedbackManager.showSuccess('标准化方案正确！');
       addScore(20, 'chapter2');
+      feedbackManager.showScore(20);
+      recordSuccess();
     } else {
+      soundEffects.error();
+      feedbackManager.showError('标准化程度不足');
       addScore(5, 'chapter2');
+      feedbackManager.showScore(5);
+      setStandardAttempts(prev => prev + 1);
+      recordError('chapter2');
     }
     setStandardConfirmed(true);
   };
 
   const handleMaterialConfirm = () => {
+    soundEffects.click();
     const material = MATERIAL_OPTIONS.find(m => m.id === selectedMaterial);
     if (material) {
-      addScore(material.score, 'chapter2');
       if (material.id === 'steel') {
+        soundEffects.success();
+        feedbackManager.showSuccess('最优材料选择！');
+        addScore(material.score, 'chapter2');
+        feedbackManager.showScore(material.score);
+        recordSuccess();
         const achievement = state.achievements['optimization_expert'];
         unlockAchievement('optimization_expert');
         setTimeout(() => setCurrentAchievement(achievement), 500);
+      } else {
+        soundEffects.match();
+        feedbackManager.showSuccess('材料已选择');
+        addScore(material.score, 'chapter2');
+        feedbackManager.showScore(material.score);
+        setOptimizeAttempts(prev => prev + 1);
+        if (material.score < 10) {
+          recordError('chapter2');
+        } else {
+          recordSuccess();
+        }
       }
     }
     setMaterialConfirmed(true);
@@ -149,6 +213,18 @@ export function Chapter2({ onComplete }: { onComplete?: () => void }) {
         <AchievementToast 
           achievement={currentAchievement} 
           onClose={() => setCurrentAchievement(null)} 
+        />
+        
+        {/* 随机事件 */}
+        <RandomEvent
+          event={randomEvent}
+          onClose={() => setRandomEvent(null)}
+        />
+        
+        {/* 反馈动画 */}
+        <FeedbackAnimation
+          feedback={feedback}
+          onComplete={() => setFeedback(null)}
         />
 
         <main className="flex-1 relative overflow-auto">
