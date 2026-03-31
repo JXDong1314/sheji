@@ -95,6 +95,13 @@ export interface GameState {
   totalAttempts: number;
   totalHintsUsed: number;
   totalErrors: number;
+  
+  // 惩罚系统（新增）
+  currentChapterErrors: number;
+  currentChapterHints: number;
+  timePenalty: number; // 累计时间惩罚（秒）
+  qualityRating: number; // 质量评级（1-5星）
+  consecutiveErrors: number; // 连续错误次数
 }
 
 export interface GameContextType {
@@ -118,6 +125,13 @@ export interface GameContextType {
   // 解谜记录
   recordAttempt: (chapterId: ChapterId, puzzleId: string, success: boolean, error?: string) => void;
   recordHint: (chapterId: ChapterId, puzzleId: string) => void;
+  
+  // 惩罚系统（新增）
+  recordError: (chapterId: ChapterId) => void;
+  recordSuccess: () => void;
+  addTimePenalty: (seconds: number) => void;
+  updateQualityRating: (delta: number) => void;
+  resetChapterStats: () => void;
   
   // 结局计算
   calculateEnding: () => EndingRank;

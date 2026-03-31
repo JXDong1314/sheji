@@ -70,6 +70,11 @@ const initialState: GameState = {
   totalAttempts: 0,
   totalHintsUsed: 0,
   totalErrors: 0,
+  currentChapterErrors: 0,
+  currentChapterHints: 0,
+  timePenalty: 0,
+  qualityRating: 5,
+  consecutiveErrors: 0,
 };
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -260,8 +265,77 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
         ...prev,
         puzzleAttempts: newAttempts,
         totalHintsUsed: prev.totalHintsUsed + 1,
+        currentChapterHints: prev.currentChapterHints + 1,
       };
     });
+  }, []);
+
+  // 惩罚系统方法
+  const recordError = useCallback((chapterId: ChapterId) => {
+    setState(prev => {
+      const errorCount = prev.currentChapterErrors + 1;
+      const consecutiveErrors = prev.consecutiveErrors + 1;
+      
+      // 计算扣分（递增惩罚）
+      let penalty = 0;
+      if (errorCount === 1) penalty = 5;
+      else if (errorCount === 2) penalty = 10;
+      else if (errorCount === 3) penalty = 15;
+      else penalty = 20;
+      
+      // 计算质量评级下降
+      let qualityDelta = 0;
+      if (errorCount <= 2) qualityDelta = -1;
+      else qualityDelta = -2;
+      
+      const newQuality = Math.max(1, prev.qualityRating + qualityDelta);
+      const newScore = Math.max(0, prev.totalScore - penalty);
+      const newChapterScore = Math.max(0, prev.chapterScores[chapterId] - penalty);
+      
+      return {
+        ...prev,
+        totalScore: newScore,
+        chapterScores: {
+          ...prev.chapterScores,
+          [chapterId]: newChapterScore,
+        },
+        currentChapterErrors: errorCount,
+        consecutiveErrors,
+        qualityRating: newQuality,
+        totalErrors: prev.totalErrors + 1,
+      };
+    });
+  }, []);
+
+  const recordSuccess = useCallback(() => {
+    setState(prev => ({
+      ...prev,
+      consecutiveErrors: 0, // 重置连续错误
+    }));
+  }, []);
+
+  const addTimePenalty = useCallback((seconds: number) => {
+    setState(prev => ({
+      ...prev,
+      timePenalty: prev.timePenalty + seconds,
+    }));
+  }, []);
+
+  const updateQualityRating = useCallback((delta: number) => {
+    setState(prev => ({
+      ...prev,
+      qualityRating: Math.max(1, Math.min(5, prev.qualityRating + delta)),
+    }));
+  }, []);
+
+  const resetChapterStats = useCallback(() => {
+    setState(prev => ({
+      ...prev,
+      currentChapterErrors: 0,
+      currentChapterHints: 0,
+      consecutiveErrors: 0,
+      qualityRating: 5,
+    }));
   }, []);
 
   // 结局计算 - 更严格的评分标准
@@ -300,6 +374,11 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
     updateKnowledgePoint,
     recordAttempt,
     recordHint,
+    recordError,
+    recordSuccess,
+    addTimePenalty,
+    updateQualityRating,
+    resetChapterStats,
     calculateEnding,
     resetGame,
   };
