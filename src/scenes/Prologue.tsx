@@ -19,7 +19,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import type { Achievement } from '../types/game';
 
-type Phase = 'intro' | 'explore' | 'puzzle' | 'outro';
+type Phase = 'intro' | 'explore' | 'puzzle' | 'classify' | 'outro';
 
 interface Clue {
   id: string;
@@ -75,6 +75,11 @@ export function Prologue({ onComplete }: { onComplete?: () => void }) {
 
   const [selectedClue, setSelectedClue] = useState<string | null>(null);
   const [matches, setMatches] = useState<Record<string, string>>({});
+  
+  // 需求分类阶段状态
+  const [classifications, setClassifications] = useState<Record<string, string>>({});
+  const [selectedRequirement, setSelectedRequirement] = useState<string | null>(null);
+  const [classifyAttempts, setClassifyAttempts] = useState(0);
 
   const allCluesFound = clues.every(c => c.found);
   
@@ -291,13 +296,11 @@ export function Prologue({ onComplete }: { onComplete?: () => void }) {
     matches['moss'] === 'env' &&
     matches['elderly'] === 'user';
   
-  // 完成谜题时的处理
+  // 完成第一阶段匹配时的处理
   useEffect(() => {
     if (isPuzzleComplete && phase === 'puzzle') {
-      setTimerPaused(true); // 停止倒计时
-      
-      // 播放完成音效
-      soundEffects.chapterComplete();
+      // 播放成功音效
+      soundEffects.success();
       
       // 根据尝试次数给分（5个线索，难度更高）
       if (attempts === 0) {
@@ -344,12 +347,104 @@ export function Prologue({ onComplete }: { onComplete?: () => void }) {
         }, 500);
       }
       
+      // 进入需求分类阶段
+      setTimeout(() => {
+        soundEffects.pageTransition();
+        setPhase('classify');
+      }, 1500);
+    }
+  }, [isPuzzleComplete, phase, attempts, allCluesFound, addScore, unlockAchievement, state.achievements]);
+  
+  // 需求分类处理函数
+  const handleClassify = (categoryId: string) => {
+    if (selectedRequirement) {
+      // 检查分类是否正确
+      const isCorrect = 
+        (selectedRequirement === 'req' && categoryId === 'functional') ||
+        (selectedRequirement === 'prob' && categoryId === 'functional') ||
+        (selectedRequirement === 'const' && categoryId === 'constraint') ||
+        (selectedRequirement === 'env' && categoryId === 'constraint') ||
+        (selectedRequirement === 'user' && categoryId === 'non-functional');
+      
+      if (!isCorrect) {
+        soundEffects.error();
+        feedbackManager.showError('分类错误！请重新思考需求的性质');
+        feedbackManager.showScore(-3);
+        setClassifyAttempts(prev => prev + 1);
+        recordError('prologue');
+        setSelectedRequirement(null);
+        return;
+      }
+      
+      // 正确分类
+      soundEffects.match();
+      feedbackManager.showSuccess('分类正确！');
+      recordSuccess();
+      
+      setClassifications(prev => {
+        const newClassifications = { ...prev };
+        Object.keys(newClassifications).forEach(key => {
+          if (newClassifications[key] === categoryId) {
+            delete newClassifications[key];
+          }
+        });
+        newClassifications[selectedRequirement] = categoryId;
+        return newClassifications;
+      });
+      setSelectedRequirement(null);
+    } else {
+      setClassifications(prev => {
+        const newClassifications = { ...prev };
+        Object.keys(newClassifications).forEach(key => {
+          if (newClassifications[key] === categoryId) {
+            delete newClassifications[key];
+          }
+        });
+        return newClassifications;
+      });
+    }
+  };
+  
+  // 检查分类是否完成
+  const isClassifyComplete = 
+    classifications['req'] === 'functional' &&
+    classifications['prob'] === 'functional' &&
+    classifications['const'] === 'constraint' &&
+    classifications['env'] === 'constraint' &&
+    classifications['user'] === 'non-functional';
+  
+  // 完成分类阶段时的处理
+  useEffect(() => {
+    if (isClassifyComplete && phase === 'classify') {
+      soundEffects.chapterComplete();
+      
+      // 根据分类错误次数给分
+      if (classifyAttempts === 0) {
+        addScore(30, 'prologue');
+        feedbackManager.showScore(30);
+        setExpertFeedback({
+          type: 'success',
+          message: '完美的需求分类！准确理解了各类需求的本质',
+          expert: '需求工程专家'
+        });
+        setShowExpertFeedback(true);
+      } else if (classifyAttempts <= 2) {
+        addScore(25, 'prologue');
+        feedbackManager.showScore(25);
+      } else if (classifyAttempts <= 4) {
+        addScore(20, 'prologue');
+        feedbackManager.showScore(20);
+      } else {
+        addScore(15, 'prologue');
+        feedbackManager.showScore(15);
+      }
+      
       setTimeout(() => {
         soundEffects.pageTransition();
         setPhase('outro');
       }, 1500);
     }
-  }, [isPuzzleComplete, phase, attempts, allCluesFound, addScore, unlockAchievement, state.achievements]);
+  }, [isClassifyComplete, phase, classifyAttempts, addScore]);
   
   // 提示消息
   const getHintMessage = () => {
@@ -659,12 +754,139 @@ export function Prologue({ onComplete }: { onComplete?: () => void }) {
                     animate={{ opacity: 1, y: 0 }}
                     className="mt-12 text-center"
                   >
-                    <button 
-                      onClick={() => setPhase('outro')}
-                      className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded shadow-[0_0_20px_rgba(37,99,235,0.4)] transition-all"
-                    >
-                      生成分析报告
-                    </button>
+                    <p className="text-green-400 mb-4">✓ 第一阶段完成！准备进入需求分类...</p>
+                  </motion.div>
+                )}
+              </div>
+            </motion.div>
+          )}
+
+          {/* CLASSIFY PHASE - 需求分类 */}
+          {phase === 'classify' && (
+            <motion.div 
+              key="classify"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 flex flex-col items-center justify-center p-8 bg-slate-950"
+            >
+              <div className="max-w-4xl w-full">
+                <h2 className="text-2xl font-bold mb-2 text-blue-400 flex items-center gap-2">
+                  <FileText className="w-6 h-6" />
+                  第二阶段：需求分类
+                </h2>
+                <p className="text-slate-400 mb-8 font-mono text-sm">
+                  将已识别的需求进行分类。先点击左侧需求，再点击右侧分类。
+                </p>
+
+                <div className="grid grid-cols-2 gap-12">
+                  {/* Requirements List */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-slate-300 border-b border-slate-800 pb-2">已识别需求</h3>
+                    {[
+                      { id: 'req', label: '用户需求', desc: '需要安全照明' },
+                      { id: 'const', label: '系统约束', desc: '不能完全依赖市电' },
+                      { id: 'prob', label: '发现问题', desc: '桥梁存在安全隐患' },
+                      { id: 'env', label: '环境因素', desc: '外部环境影响' },
+                      { id: 'user', label: '用户特征', desc: '使用者特点' }
+                    ].map(req => {
+                      const isClassified = Object.values(classifications).includes(req.id);
+                      return (
+                        <motion.button
+                          key={req.id}
+                          onClick={() => !isClassified && setSelectedRequirement(req.id)}
+                          className={cn(
+                            "w-full text-left p-4 rounded border transition-all",
+                            isClassified ? "bg-slate-900 border-slate-800 text-slate-600 cursor-not-allowed" :
+                            selectedRequirement === req.id ? "bg-blue-900/30 border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.3)]" :
+                            "bg-slate-900/50 border-slate-700 hover:border-blue-500/50 cursor-pointer"
+                          )}
+                          whileHover={!isClassified ? { scale: 1.02 } : {}}
+                          whileTap={!isClassified ? { scale: 0.98 } : {}}
+                        >
+                          <div className="font-bold text-slate-200 mb-1">{req.label}</div>
+                          <div className="text-xs text-slate-500">{req.desc}</div>
+                        </motion.button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Categories List */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-slate-300 border-b border-slate-800 pb-2">需求分类</h3>
+                    {[
+                      { 
+                        id: 'functional', 
+                        label: '功能性需求', 
+                        desc: '系统必须提供的功能',
+                        examples: '照明、防护等直接功能'
+                      },
+                      { 
+                        id: 'non-functional', 
+                        label: '非功能性需求', 
+                        desc: '系统的质量属性',
+                        examples: '可靠性、安全性、可用性'
+                      },
+                      { 
+                        id: 'constraint', 
+                        label: '约束条件', 
+                        desc: '设计和实施的限制',
+                        examples: '成本、环境、技术限制'
+                      }
+                    ].map(category => {
+                      const classifiedReqId = Object.keys(classifications).find(key => classifications[key] === category.id);
+                      const classifiedReq = classifiedReqId ? 
+                        [
+                          { id: 'req', label: '用户需求' },
+                          { id: 'const', label: '系统约束' },
+                          { id: 'prob', label: '发现问题' },
+                          { id: 'env', label: '环境因素' },
+                          { id: 'user', label: '用户特征' }
+                        ].find(r => r.id === classifiedReqId) : null;
+                      
+                      const isCorrect = 
+                        (category.id === 'functional' && (classifiedReqId === 'req' || classifiedReqId === 'prob')) ||
+                        (category.id === 'non-functional' && classifiedReqId === 'user') ||
+                        (category.id === 'constraint' && (classifiedReqId === 'const' || classifiedReqId === 'env'));
+
+                      return (
+                        <div
+                          key={category.id}
+                          onClick={() => handleClassify(category.id)}
+                          className={cn(
+                            "w-full p-4 rounded border-2 border-dashed transition-all",
+                            classifiedReq ? (isCorrect ? "bg-green-900/20 border-green-500/50 cursor-pointer" : "bg-red-900/20 border-red-500/50 cursor-pointer") :
+                            selectedRequirement ? "border-blue-500/50 bg-blue-900/10 cursor-pointer hover:bg-blue-900/20" :
+                            "border-slate-800 bg-black/50"
+                          )}
+                        >
+                          <div className="font-bold text-slate-200 mb-1">{category.label}</div>
+                          <div className="text-xs text-slate-500 mb-2">{category.desc}</div>
+                          <div className="text-xs text-slate-600 italic mb-2">示例：{category.examples}</div>
+                          <div className="min-h-[30px] flex items-center">
+                            {classifiedReq ? (
+                              <div className="flex items-center gap-2 text-sm text-slate-300">
+                                <ArrowRight className="w-4 h-4 text-slate-500" />
+                                {classifiedReq.label}
+                                {isCorrect ? <CheckCircle2 className="w-4 h-4 text-green-500 ml-2" /> : <AlertTriangle className="w-4 h-4 text-red-500 ml-2" />}
+                              </div>
+                            ) : (
+                              <span className="text-sm text-slate-600 italic">等待分类...</span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {isClassifyComplete && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-12 text-center"
+                  >
+                    <p className="text-green-400 mb-4">✓ 需求分类完成！生成分析报告...</p>
                   </motion.div>
                 )}
               </div>
