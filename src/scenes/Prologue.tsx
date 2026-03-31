@@ -354,8 +354,8 @@ export function Prologue({ onComplete }: { onComplete?: () => void }) {
         {/* Header */}
         <header className="p-4 border-b border-slate-800 flex justify-between items-center bg-black/50 backdrop-blur-sm">
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-red-600" />
-          <span className="font-mono text-sm tracking-widest text-slate-400">非正常现象科学调查局 // 档案编号: 001</span>
+          <div className="w-3 h-3 rounded-full bg-blue-600" />
+          <span className="font-mono text-sm tracking-widest text-slate-400">技术设计调查组 // 项目编号: TD-001</span>
         </div>
         <div className="flex items-center gap-4">
           <div className="font-mono text-xs text-slate-500">
@@ -389,20 +389,20 @@ export function Prologue({ onComplete }: { onComplete?: () => void }) {
             >
               <div className="space-y-6 min-h-[200px]">
                 {introStep >= 0 && (
-                  <p><Typewriter text="每逢月黑风高之夜，李家坳村口的断桥边总会闪烁着惨白的" onComplete={() => setTimeout(() => setIntroStep(1), 500)} />
-                  {introStep >= 1 && <Glitch text="鬼火" className="mx-1" />}
-                  {introStep >= 1 && <Typewriter text="，伴随着摄人心魄的落水声……" onComplete={() => setTimeout(() => setIntroStep(2), 1000)} />}</p>
+                  <p><Typewriter text="李家坳村口的断桥近期发生了三起" onComplete={() => setTimeout(() => setIntroStep(1), 500)} />
+                  {introStep >= 1 && <span className="mx-1 text-red-400 font-bold">安全事故</span>}
+                  {introStep >= 1 && <Typewriter text="，村民在夜间通过时多次跌落受伤。" onComplete={() => setTimeout(() => setIntroStep(2), 1000)} />}</p>
                 )}
                 
                 {introStep >= 2 && (
-                  <p><Typewriter text="已经有三位起早贪黑的村民在这里遭遇不测。这究竟是前世的诅咒，还是" onComplete={() => setTimeout(() => setIntroStep(3), 500)} />
-                  {introStep >= 3 && <Glitch text="水鬼的索命" className="mx-1" />}
-                  {introStep >= 3 && <Typewriter text="？" onComplete={() => setTimeout(() => setIntroStep(4), 1000)} />}</p>
+                  <p><Typewriter text="省级安全检查组要求立即进行技术评估。你作为技术设计调查组成员，需要运用" onComplete={() => setTimeout(() => setIntroStep(3), 500)} />
+                  {introStep >= 3 && <span className="mx-1 text-blue-400 font-bold">需求分析方法</span>}
+                  {introStep >= 3 && <Typewriter text="找出问题根源。" onComplete={() => setTimeout(() => setIntroStep(4), 1000)} />}</p>
                 )}
 
                 {introStep >= 4 && (
                   <p className="text-blue-400 font-mono text-sm mt-8">
-                    <Typewriter text="> 任务：前往现场调查，搜集线索。" onComplete={() => setTimeout(() => setPhase('explore'), 500)} />
+                    <Typewriter text="> 任务：前往现场调查，收集技术线索，完成需求分析报告。" onComplete={() => setTimeout(() => setPhase('explore'), 500)} />
                   </p>
                 )}
               </div>
@@ -590,17 +590,17 @@ export function Prologue({ onComplete }: { onComplete?: () => void }) {
               <div className="max-w-2xl text-slate-300 space-y-4 leading-relaxed">
                 {outroStep >= 0 && (
                   <p>
-                    <Typewriter text="经过科学的分析，所谓的“水鬼”不过是村民在黑暗中对未知危险的恐惧投射。" speed={30} onComplete={() => setOutroStep(1)} />
+                    <Typewriter text="通过系统的需求分析，你成功识别了三个关键技术要素：用户需求、系统约束和问题定义。" speed={30} onComplete={() => setOutroStep(1)} />
                   </p>
                 )}
                 {outroStep >= 1 && (
                   <p>
-                    <Typewriter text="真正的罪魁祸首，是缺失的照明设施和危险的桥梁结构。" speed={30} onComplete={() => setOutroStep(2)} />
+                    <Typewriter text="事故的根本原因是：夜间照明不足、桥梁防护设施缺失、电力供应不稳定。" speed={30} onComplete={() => setOutroStep(2)} />
                   </p>
                 )}
                 {outroStep >= 2 && (
                   <p className="text-blue-400 font-mono mt-8">
-                    <Typewriter text="> 下一步：前往疯老头的住处，调查那个发出怪叫的“镇魂法器”。" speed={30} onComplete={() => setShowNextBtn(true)} />
+                    <Typewriter text="> 下一步：前往老工程师的住处，调查那个发出异响的自动化设备。" speed={30} onComplete={() => setShowNextBtn(true)} />
                   </p>
                 )}
                 {showNextBtn && (
