@@ -8,6 +8,9 @@ import { Glitch } from '../components/Glitch';
 import { SceneBackground } from '../components/SceneBackground';
 import { ScoreDisplay } from '../components/ScoreDisplay';
 import { AchievementToast } from '../components/AchievementToast';
+import { RandomEvent, RandomEventGenerator, type RandomEvent as RandomEventType } from '../components/RandomEvent';
+import { FeedbackAnimation, feedbackManager, type Feedback } from '../components/FeedbackAnimation';
+import { soundEffects } from '../utils/soundEffects';
 import { useGame } from '../hooks/useGame';
 import { Shield, Zap, Heart, Smile, CheckCircle2, AlertTriangle, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -78,7 +81,7 @@ const HMI_FACTORS: HMIFactor[] = [
 ];
 
 export function Chapter3({ onComplete }: { onComplete?: () => void }) {
-  const { state, addScore, unlockAchievement } = useGame();
+  const { state, addScore, unlockAchievement, recordError, recordSuccess, resetChapterStats } = useGame();
   
   const [phase, setPhase] = useState<Phase>('intro');
   const [introStep, setIntroStep] = useState(0);
@@ -88,6 +91,17 @@ export function Chapter3({ onComplete }: { onComplete?: () => void }) {
   // 成就弹窗状态
   const [currentAchievement, setCurrentAchievement] = useState<Achievement | null>(null);
   
+  // 随机事件和反馈系统
+  const [randomEvent, setRandomEvent] = useState<RandomEventType | null>(null);
+  const [feedback, setFeedback] = useState<Feedback | null>(null);
+  const [eventGenerator] = useState(() => new RandomEventGenerator());
+  
+  // 初始化时重置章节统计
+  useEffect(() => {
+    resetChapterStats();
+    soundEffects.setEnabled(true);
+  }, [resetChapterStats]);
+  
   // 人机关系评估选择
   const [selections, setSelections] = useState<Record<string, string>>({});
   const [confirmed, setConfirmed] = useState(false);
@@ -96,6 +110,7 @@ export function Chapter3({ onComplete }: { onComplete?: () => void }) {
   const allSelected = Object.keys(selections).length === HMI_FACTORS.length;
 
   const handleConfirm = () => {
+    soundEffects.click();
     let score = 0;
     let perfectCount = 0;
     
@@ -103,11 +118,36 @@ export function Chapter3({ onComplete }: { onComplete?: () => void }) {
       const selectedOption = factor.options.find(opt => opt.id === selections[factor.id]);
       if (selectedOption) {
         score += selectedOption.score;
-        if (selectedOption.score === 10) perfectCount++;
+        if (selectedOption.score === 10) {
+          perfectCount++;
+          recordSuccess();
+        } else {
+          recordError('chapter3');
+        }
       }
     });
     
     setTotalScore(score);
+    
+    // 根据得分给予反馈
+    if (score === 40) {
+      soundEffects.chapterComplete();
+      feedbackManager.showSuccess('完美的人机工程学设计！');
+      feedbackManager.showScore(score);
+    } else if (score >= 30) {
+      soundEffects.success();
+      feedbackManager.showSuccess('优秀的设计方案！');
+      feedbackManager.showScore(score);
+    } else if (score >= 20) {
+      soundEffects.match();
+      feedbackManager.showSuccess('良好的设计');
+      feedbackManager.showScore(score);
+    } else {
+      soundEffects.error();
+      feedbackManager.showError('设计需要改进');
+      feedbackManager.showScore(score);
+    }
+    
     addScore(score, 'chapter3');
     
     if (perfectCount === 4) {
@@ -144,6 +184,18 @@ export function Chapter3({ onComplete }: { onComplete?: () => void }) {
         <AchievementToast 
           achievement={currentAchievement} 
           onClose={() => setCurrentAchievement(null)} 
+        />
+        
+        {/* 随机事件 */}
+        <RandomEvent
+          event={randomEvent}
+          onClose={() => setRandomEvent(null)}
+        />
+        
+        {/* 反馈动画 */}
+        <FeedbackAnimation
+          feedback={feedback}
+          onComplete={() => setFeedback(null)}
         />
 
         <main className="flex-1 relative overflow-auto">
