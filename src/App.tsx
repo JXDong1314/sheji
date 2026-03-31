@@ -6,6 +6,7 @@
 import { useState, useEffect } from 'react';
 import { GameProvider } from './contexts/GameContext';
 import { useGame } from './hooks/useGame';
+import { ChapterSwitcher } from './components/ChapterSwitcher';
 import { Prologue } from './scenes/Prologue';
 import { Chapter1 } from './scenes/Chapter1';
 import { Chapter2 } from './scenes/Chapter2';
@@ -51,11 +52,29 @@ function GameContent() {
 
   // 显示结局
   if (showEnding) {
-    return <Ending onRestart={handleRestart} />;
+    return (
+      <>
+        <ChapterSwitcher
+          currentChapter="ending"
+          onChapterChange={(chapterId) => {
+            if (chapterId === 'ending') return;
+            setShowEnding(false);
+            setCurrentChapter(chapterId);
+          }}
+          completedChapters={state.completedChapters}
+        />
+        <Ending onRestart={handleRestart} />
+      </>
+    );
   }
 
   return (
     <>
+      <ChapterSwitcher
+        currentChapter={state.currentChapter}
+        onChapterChange={setCurrentChapter}
+        completedChapters={state.completedChapters}
+      />
       {state.currentChapter === 'prologue' && <Prologue onComplete={handlePrologueComplete} />}
       {state.currentChapter === 'chapter1' && <Chapter1 onComplete={handleChapter1Complete} />}
       {state.currentChapter === 'chapter2' && <Chapter2 onComplete={handleChapter2Complete} />}
