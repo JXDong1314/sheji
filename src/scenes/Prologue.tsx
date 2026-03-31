@@ -6,6 +6,10 @@ import { HintBox } from '../components/HintBox';
 import { SceneBackground } from '../components/SceneBackground';
 import { ScoreDisplay } from '../components/ScoreDisplay';
 import { AchievementToast } from '../components/AchievementToast';
+import { Timer } from '../components/Timer';
+import { QualityRating } from '../components/QualityRating';
+import { ExpertFeedback } from '../components/ExpertFeedback';
+import { TechDashboard } from '../components/TechDashboard';
 import { useGame } from '../hooks/useGame';
 import { Search, ZapOff, AlertTriangle, FileText, CheckCircle2, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -40,6 +44,13 @@ export function Prologue({ onComplete }: { onComplete?: () => void }) {
   // 成就弹窗状态
   const [currentAchievement, setCurrentAchievement] = useState<Achievement | null>(null);
   
+  // 纯科学情感增强状态
+  const [qualityRating, setQualityRating] = useState(5);
+  const [showExpertFeedback, setShowExpertFeedback] = useState(false);
+  const [expertFeedback, setExpertFeedback] = useState({ type: 'info' as const, message: '', expert: '' });
+  const [timerPaused, setTimerPaused] = useState(true);
+  const [timeBonus, setTimeBonus] = useState(0);
+  
   const [clues, setClues] = useState<Clue[]>([
     { id: 'bridge', label: '栏杆高度异常', desc: '断桥的栏杆低矮且破损，起不到防护作用。', found: false, icon: <AlertTriangle className="w-8 h-8 text-yellow-500" />, x: '25%', y: '55%' },
     { id: 'station', label: '枯水期经常停电', desc: '废弃的水电站，枯水期根本无法提供稳定的市电。', found: false, icon: <ZapOff className="w-8 h-8 text-blue-500" />, x: '75%', y: '35%' },
@@ -53,9 +64,24 @@ export function Prologue({ onComplete }: { onComplete?: () => void }) {
   
   useEffect(() => {
     if (phase === 'explore' && allCluesFound) {
-      setTimeout(() => setPhase('puzzle'), 2000);
+      setTimeout(() => {
+        setPhase('puzzle');
+        setTimerPaused(false); // 开始倒计时
+      }, 2000);
     }
   }, [allCluesFound, phase]);
+  
+  // 监听成就解锁
+  useEffect(() => {
+    const prevUnlocked = state.unlockedAchievements.length;
+    if (state.unlockedAchievements.length > prevUnlocked) {
+      const latestAchievement = state.unlockedAchievements[state.unlockedAchievements.length - 1];
+      const achievement = state.achievements[latestAchievement];
+      if (achievement) {
+        setCurrentAchievement(achievement);
+      }
+    }
+  }, [state.unlockedAchievements, state.achievements]);
 
   const handleClueClick = (id: string) => {
     setClues(prev => prev.map(c => c.id === id ? { ...c, found: true } : c));
@@ -74,8 +100,18 @@ export function Prologue({ onComplete }: { onComplete?: () => void }) {
         const newAttempts = attempts + 1;
         setAttempts(newAttempts);
         recordAttempt('prologue', 'requirement_matching', false, `错误匹配: ${selectedClue} -> ${targetId}`);
-        // 增加扣分力度 - 每次错误扣3分
-        deductScore(3, 'prologue');
+        
+        // 降低质量评级
+        const newRating = Math.max(1, qualityRating - 1);
+        setQualityRating(newRating);
+        
+        // 增加扣分力度 - 每次错误扣5分
+        deductScore(5, 'prologue');
+        
+        // 显示专家反馈
+        const feedback = getExpertFeedback(newRating, newAttempts);
+        setExpertFeedback(feedback);
+        setShowExpertFeedback(true);
         
         // 根据尝试次数显示不同级别的提示
         if (newAttempts === 1) {
@@ -87,6 +123,20 @@ export function Prologue({ onComplete }: { onComplete?: () => void }) {
         } else if (newAttempts >= 3) {
           setHintLevel(3);
           setShowHint(true);
+        }
+        
+        // 质量不达标 - 强制重新开始
+        if (newRating <= 1) {
+          setTimeout(() => {
+            alert('设计质量不达标！\n技术方案被专家组驳回\n需要重新进行需求分析\n-50分');
+            deductScore(50, 'prologue');
+            // 重置状态
+            setQualityRating(5);
+            setAttempts(0);
+            setMatches({});
+            setSelectedClue(null);
+            setShowHint(false);
+          }, 2000);
         }
         
         // 不保存错误匹配
@@ -121,19 +171,92 @@ export function Prologue({ onComplete }: { onComplete?: () => void }) {
     }
   };
 
+  // 专家反馈函数
+  const getExpertFeedback = (rating: number, attempts: number) => {
+    if (rating === 4) {
+      return {
+        type: 'warning' as const,
+        message: '这个方案有待商榷，建议重新考虑需求分析的准确性...',
+        expert: '技术顾问'
+      };
+    } else if (rating === 3) {
+      return {
+        type: 'warning' as const,
+        message: '注意！设计偏离了标准的需求分析流程，请仔细核对',
+        expert: '项目经理'
+      };
+    } else if (rating === 2) {
+      return {
+        type: 'error' as const,
+        message: '严重警告！需求分析存在重大缺陷，必须立即纠正',
+        expert: '总工程师'
+      };
+    } else {
+      return {
+        type: 'error' as const,
+        message: '该方案存在根本性错误，不符合工程标准',
+        expert: '评审委员会'
+      };
+    }
+  };
+
+  // 倒计时结束处理
+  const handleTimeout = () => {
+    setTimerPaused(true);
+    alert('时间到！项目延期\n未能在规定时间内完成需求分析\n-20分');
+    deductScore(20, 'prologue');
+    setQualityRating(prev => Math.max(1, prev - 1));
+  };
+
+  // 完成时的时间奖励
+  const handleTimerComplete = (remainingTime: number) => {
+    const totalTime = 300; // 5分钟
+    const percentage = (remainingTime / totalTime) * 100;
+    
+    if (percentage > 50) {
+      setTimeBonus(10);
+      addScore(10, 'prologue');
+      setExpertFeedback({
+        type: 'success',
+        message: '出色的时间管理！提前完成需求分析工作',
+        expert: '项目经理'
+      });
+      setShowExpertFeedback(true);
+    } else if (percentage > 30) {
+      setTimeBonus(5);
+      addScore(5, 'prologue');
+    }
+  };
+
   const isPuzzleComplete = matches['chief'] === 'req' && matches['station'] === 'const' && matches['bridge'] === 'prob';
   
   // 完成谜题时的处理
   useEffect(() => {
     if (isPuzzleComplete && phase === 'puzzle') {
+      setTimerPaused(true); // 停止倒计时
+      
       // 根据尝试次数给分
       if (attempts === 0) {
         addScore(25, 'prologue');
         const achievement = state.achievements['requirement_analyst'];
         unlockAchievement('requirement_analyst');
         setCurrentAchievement(achievement);
+        
+        // 完美表现的专家反馈
+        setExpertFeedback({
+          type: 'success',
+          message: '完美的需求分析！零失误完成所有匹配，展现了专业水准',
+          expert: '院士评审'
+        });
+        setShowExpertFeedback(true);
       } else if (attempts <= 2) {
         addScore(20, 'prologue');
+        setExpertFeedback({
+          type: 'success',
+          message: '优秀的需求分析能力，方案合理可行',
+          expert: '技术专家'
+        });
+        setShowExpertFeedback(true);
       } else if (attempts <= 4) {
         addScore(15, 'prologue');
       } else {
@@ -145,6 +268,8 @@ export function Prologue({ onComplete }: { onComplete?: () => void }) {
         unlockAchievement('clue_hunter');
         setTimeout(() => setCurrentAchievement(achievement), 500);
       }
+      
+      setTimeout(() => setPhase('outro'), 1500);
     }
   }, [isPuzzleComplete, phase, attempts, allCluesFound, addScore, unlockAchievement, state.achievements]);
   
@@ -173,6 +298,59 @@ export function Prologue({ onComplete }: { onComplete?: () => void }) {
   return (
     <SceneBackground scene="prologue">
       <div className="relative z-10 w-full h-screen text-slate-200 font-sans overflow-hidden crt flex flex-col">
+        {/* 纯科学情感增强组件 */}
+        {phase === 'puzzle' && (
+          <>
+            <Timer
+              duration={300}
+              onTimeout={handleTimeout}
+              onComplete={handleTimerComplete}
+              paused={timerPaused}
+            />
+            <QualityRating rating={qualityRating} />
+            <TechDashboard
+              metrics={[
+                { 
+                  label: '分析准确率', 
+                  value: Math.max(0, 100 - attempts * 15), 
+                  unit: '%', 
+                  status: attempts === 0 ? 'good' : attempts <= 2 ? 'warning' : 'danger',
+                  trend: attempts === 0 ? 'stable' : 'down'
+                },
+                { 
+                  label: '设计质量', 
+                  value: qualityRating, 
+                  unit: '星', 
+                  status: qualityRating >= 4 ? 'good' : qualityRating >= 3 ? 'warning' : 'danger',
+                  trend: qualityRating === 5 ? 'stable' : 'down'
+                },
+                { 
+                  label: '错误次数', 
+                  value: attempts, 
+                  unit: '次', 
+                  status: attempts === 0 ? 'good' : attempts <= 2 ? 'warning' : 'danger',
+                  trend: attempts > 0 ? 'up' : 'stable'
+                }
+              ]}
+              predictedRank={
+                state.totalScore >= 120 ? 'S级' :
+                state.totalScore >= 100 ? 'A级' :
+                state.totalScore >= 80 ? 'B级' :
+                state.totalScore >= 60 ? 'C级' :
+                state.totalScore >= 40 ? 'D级' : 'F级'
+              }
+            />
+          </>
+        )}
+        
+        <ExpertFeedback
+          type={expertFeedback.type}
+          message={expertFeedback.message}
+          expert={expertFeedback.expert}
+          show={showExpertFeedback}
+          onClose={() => setShowExpertFeedback(false)}
+        />
+        
         {/* Header */}
         <header className="p-4 border-b border-slate-800 flex justify-between items-center bg-black/50 backdrop-blur-sm">
         <div className="flex items-center gap-2">
