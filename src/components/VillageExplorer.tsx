@@ -388,35 +388,30 @@ export function VillageExplorer({ onClueCollected, onAllCluesCollected, collecte
   };
 
   return (
-    <div className="relative w-full h-full flex items-center justify-center overflow-hidden bg-slate-950">
-      {/* 豆包生成的村庄背景图 */}
+    <div className="relative w-full h-full flex items-center justify-center overflow-hidden" style={{ background: 'linear-gradient(135deg, #0f1419 0%, #1a1f2e 100%)' }}>
+      {/* 豆包生成的村庄背景图 - 全屏显示 */}
       <div 
         className="absolute inset-0 bg-cover bg-center"
         style={{
           backgroundImage: 'url(/village-background.jpg)',
-          opacity: 0.6,
-          filter: 'brightness(0.8) contrast(1.1)',
-          imageRendering: 'pixelated'
+          opacity: 0.35,
+          filter: 'brightness(0.7) saturate(1.2)',
+          imageRendering: 'auto'
         }}
       />
       
-      {/* 渐变遮罩增强氛围 */}
-      <div className="absolute inset-0 bg-gradient-to-b from-slate-950/40 via-transparent to-slate-950/60" />
+      {/* 柔和的渐变遮罩 */}
+      <div className="absolute inset-0 bg-gradient-to-b from-slate-950/30 via-slate-900/20 to-slate-950/40" />
       
-      {/* 微弱的光晕装饰 */}
-      <div className="absolute inset-0 opacity-5">
-        <div className="absolute top-0 left-0 w-96 h-96 bg-blue-500 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-500 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-      </div>
-      
-      {/* 地图容器 */}
+      {/* 地图容器 - 半透明玻璃效果 */}
       <div 
-        className="relative rounded-2xl overflow-hidden shadow-[0_0_60px_rgba(59,130,246,0.5)] border-4 border-blue-500/30 backdrop-blur-sm"
+        className="relative rounded-3xl overflow-hidden shadow-2xl border border-white/10"
         style={{
           width: MAP_WIDTH * TILE_SIZE,
           height: MAP_HEIGHT * TILE_SIZE,
-          background: 'linear-gradient(135deg, #1e3a5f 0%, #0f172a 50%, #1a1f3a 100%)',
-          boxShadow: '0 0 80px rgba(59, 130, 246, 0.4), inset 0 0 60px rgba(0, 0, 0, 0.5)'
+          background: 'rgba(15, 23, 42, 0.75)',
+          backdropFilter: 'blur(20px) saturate(180%)',
+          boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.1), inset 0 0 60px rgba(0, 0, 0, 0.3)'
         }}
       >
         {/* 动态网格背景 */}

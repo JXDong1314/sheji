@@ -6,3 +6,7 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# 包含API密钥的脚本
+scripts/download_village_bg.js
+scripts/generateBackground.js
