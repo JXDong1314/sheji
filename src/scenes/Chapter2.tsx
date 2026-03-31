@@ -1,5 +1,5 @@
 /**
- * 第二章：铁匠铺的血书图纸
+ * 第二章：工程师的技术图纸
  * 教学知识点：技术语言、标准化、优选法
  */
 import React, { useState, useEffect } from 'react';
@@ -130,8 +130,8 @@ export function Chapter2({ onComplete }: { onComplete?: () => void }) {
         {/* Header */}
         <header className="p-4 border-b border-slate-800 flex justify-between items-center bg-black/50 backdrop-blur-sm">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-orange-600" />
-            <span className="font-mono text-sm tracking-widest text-slate-400">非正常现象科学调查局 // 档案编号: 003</span>
+            <div className="w-3 h-3 rounded-full bg-blue-600" />
+            <span className="font-mono text-sm tracking-widest text-slate-400">技术设计调查组 // 项目编号: TD-003</span>
           </div>
           <div className="flex items-center gap-4">
             <div className="font-mono text-xs text-slate-500">
@@ -165,14 +165,14 @@ export function Chapter2({ onComplete }: { onComplete?: () => void }) {
               >
                 <div className="space-y-6 min-h-[200px]">
                   {introStep >= 0 && (
-                    <p><Typewriter text="你来到村里唯一的铁匠铺，老铁匠颤抖着递给你一张泛黄的图纸。" onComplete={() => setTimeout(() => setIntroStep(1), 500)} />
+                    <p><Typewriter text="你来到村里的铁匠铺，老铁匠递给你一张李师傅留下的设计图纸。" onComplete={() => setTimeout(() => setIntroStep(1), 500)} />
                     </p>
                   )}
                   
                   {introStep >= 1 && (
                     <p><Typewriter text="图纸上用" onComplete={() => setTimeout(() => setIntroStep(2), 300)} />
-                    {introStep >= 2 && <Glitch text="鲜红的墨水" className="mx-1" />}
-                    {introStep >= 2 && <Typewriter text='写着密密麻麻的符号，老铁匠说这是疯老头生前留下的"镇魂灯柱"设计图。' onComplete={() => setTimeout(() => setIntroStep(3), 1000)} />}</p>
+                    {introStep >= 2 && <span className="mx-1 text-red-400 font-bold">红色标注</span>}
+                    {introStep >= 2 && <Typewriter text="写着密密麻麻的符号，老铁匠说这是李师傅留下的路灯灯柱设计图。" onComplete={() => setTimeout(() => setIntroStep(3), 1000)} />}</p>
                   )}
 
                   {introStep >= 3 && (
@@ -423,17 +423,17 @@ export function Chapter2({ onComplete }: { onComplete?: () => void }) {
                 <div className="max-w-2xl text-slate-300 space-y-4 leading-relaxed">
                   {outroStep >= 0 && (
                     <p>
-                      <Typewriter text='通过技术语言、标准化设计和优选法，你将混乱的"血书"转化为了规范的工程图纸。' speed={30} onComplete={() => setOutroStep(1)} />
+                      <Typewriter text="通过技术语言、标准化设计和优选法，你将混乱的草图转化为了规范的工程图纸。" speed={30} onComplete={() => setOutroStep(1)} />
                     </p>
                   )}
                   {outroStep >= 1 && (
                     <p>
-                      <Typewriter text='老铁匠恍然大悟："原来疯老头不是在写鬼符，他是在用自己的方式记录技术方案！"' speed={30} onComplete={() => setOutroStep(2)} />
+                      <Typewriter text="老铁匠恍然大悟：原来李师傅是在用自己的方式记录技术方案！" speed={30} onComplete={() => setOutroStep(2)} />
                     </p>
                   )}
                   {outroStep >= 2 && (
                     <p className="text-orange-400 font-mono mt-8">
-                      <Typewriter text='> 下一步：前往村口，调查那盏"会吃人"的新路灯……' speed={30} onComplete={() => setShowNextBtn(true)} />
+                      <Typewriter text="> 下一步：前往村口，检查新安装的路灯系统的人机工程问题。" speed={30} onComplete={() => setShowNextBtn(true)} />
                     </p>
                   )}
                   {showNextBtn && (

@@ -60,7 +60,7 @@ export function Chapter1({ onComplete }: { onComplete?: () => void }) {
         <header className="p-4 border-b border-slate-800 flex justify-between items-center bg-black/50 backdrop-blur-sm">
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-blue-600" />
-          <span className="font-mono text-sm tracking-widest text-slate-400">非正常现象科学调查局 // 档案编号: 002</span>
+          <span className="font-mono text-sm tracking-widest text-slate-400">技术设计调查组 // 项目编号: TD-002</span>
         </div>
         <div className="flex items-center gap-4">
           <div className="font-mono text-xs text-slate-500">
@@ -93,17 +93,17 @@ export function Chapter1({ onComplete }: { onComplete?: () => void }) {
             >
               <div className="space-y-6 min-h-[200px]">
                 {introStep >= 0 && (
-                  <p><Typewriter text="在村长带领下，你找到了那个神神叨叨的“疯老头”。" onComplete={() => setTimeout(() => setIntroStep(1), 500)} /></p>
+                  <p><Typewriter text="在村长带领下，你找到了村里的老工程师李师傅。" onComplete={() => setTimeout(() => setIntroStep(1), 500)} /></p>
                 )}
                 
                 {introStep >= 1 && (
-                  <p><Typewriter text="他正对着一个挂在桥头的破铜烂铁做法。这玩意儿贴满符咒，偶尔还会发出" onComplete={() => setTimeout(() => setIntroStep(2), 500)} />
-                  {introStep >= 2 && <Glitch text="凄厉的怪叫" className="mx-1" />}
-                  {introStep >= 2 && <Typewriter text="，吓得村民更不敢靠近了。" onComplete={() => setTimeout(() => setIntroStep(3), 1000)} />}</p>
+                  <p><Typewriter text="他正在桥头调试一个自制的路灯装置。这个设备偶尔会发出" onComplete={() => setTimeout(() => setIntroStep(2), 500)} />
+                  {introStep >= 2 && <span className="mx-1 text-orange-400 font-bold">刺耳的电流声</span>}
+                  {introStep >= 2 && <Typewriter text="，让村民感到不安。" onComplete={() => setTimeout(() => setIntroStep(3), 1000)} />}</p>
                 )}
 
                 {introStep >= 3 && (
-                  <p><Typewriter text="你撕下符咒，发现这其实是一个设计失败的自动路灯原型。老头不懂技术，把所有能找到的零件都胡乱接在了一起。" onComplete={() => setTimeout(() => setIntroStep(4), 1000)} /></p>
+                  <p><Typewriter text="经过检查，你发现这是一个设计不完善的自动路灯原型。李师傅缺乏系统设计经验，把多个功能模块混在了一起。" onComplete={() => setTimeout(() => setIntroStep(4), 1000)} /></p>
                 )}
 
                 {introStep >= 4 && (
@@ -394,12 +394,12 @@ export function Chapter1({ onComplete }: { onComplete?: () => void }) {
                 )}
                 {outroStep >= 1 && (
                   <p>
-                    <Typewriter text="疯老头的“镇魂法器”终于被改造成了科学的“风光互补自动路灯”核心模块。" speed={30} onComplete={() => setOutroStep(2)} />
+                    <Typewriter text="李师傅的自制装置终于被改造成了科学的风光互补自动路灯核心模块。" speed={30} onComplete={() => setOutroStep(2)} />
                   </p>
                 )}
                 {outroStep >= 2 && (
                   <p className="text-blue-400 font-mono mt-8">
-                    <Typewriter text="> 下一步：寻找铁匠打造灯柱，但疯老头留下了一张诡异的“血书”图纸……" speed={30} onComplete={() => setShowNextBtn(true)} />
+                    <Typewriter text="> 下一步：寻找铁匠打造灯柱，但需要先解读李师傅留下的技术图纸。" speed={30} onComplete={() => setShowNextBtn(true)} />
                   </p>
                 )}
                 {showNextBtn && (

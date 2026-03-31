@@ -126,8 +126,8 @@ export function Chapter3({ onComplete }: { onComplete?: () => void }) {
         {/* Header */}
         <header className="p-4 border-b border-slate-800 flex justify-between items-center bg-black/50 backdrop-blur-sm">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-purple-600" />
-            <span className="font-mono text-sm tracking-widest text-slate-400">非正常现象科学调查局 // 档案编号: 004</span>
+            <div className="w-3 h-3 rounded-full bg-blue-600" />
+            <span className="font-mono text-sm tracking-widest text-slate-400">技术设计调查组 // 项目编号: TD-004</span>
           </div>
           <div className="flex items-center gap-4">
             <div className="font-mono text-xs text-slate-500">
@@ -166,8 +166,8 @@ export function Chapter3({ onComplete }: { onComplete?: () => void }) {
                   
                   {introStep >= 1 && (
                     <p><Typewriter text="但就在这时，一个小孩突然" onComplete={() => setTimeout(() => setIntroStep(2), 300)} />
-                    {introStep >= 2 && <Glitch text="尖叫着倒地" className="mx-1" />}
-                    {introStep >= 2 && <Typewriter text='！村民们惊恐地发现，孩子的手被灯杆上裸露的电线电伤了。' onComplete={() => setTimeout(() => setIntroStep(3), 1000)} />}</p>
+                    {introStep >= 2 && <span className="mx-1 text-orange-400 font-bold">大叫起来</span>}
+                    {introStep >= 2 && <Typewriter text="！村民们发现，孩子的手被灯杆上裸露的电线电伤了。" onComplete={() => setTimeout(() => setIntroStep(3), 1000)} />}</p>
                   )}
 
                   {introStep >= 3 && (
