@@ -155,23 +155,28 @@ export function Chapter1({ onComplete }: { onComplete?: () => void }) {
             >
               <div className="space-y-6 min-h-[200px]">
                 {introStep >= 0 && (
-                  <p><Typewriter text="在村长带领下，你找到了村里的老工程师李师傅。" onComplete={() => setTimeout(() => setIntroStep(1), 500)} /></p>
+                  <p><Typewriter text="在村长带领下，你找到了村里的老工程师李师傅。" /></p>
                 )}
                 
                 {introStep >= 1 && (
-                  <p><Typewriter text="他正在桥头调试一个自制的路灯装置。这个设备偶尔会发出" onComplete={() => setTimeout(() => setIntroStep(2), 500)} />
+                  <p><Typewriter text="他正在桥头调试一个自制的路灯装置。这个设备偶尔会发出" />
                   {introStep >= 2 && <span className="mx-1 text-orange-400 font-bold">刺耳的电流声</span>}
-                  {introStep >= 2 && <Typewriter text="，让村民感到不安。" onComplete={() => setTimeout(() => setIntroStep(3), 1000)} />}</p>
+                  {introStep >= 2 && <Typewriter text="，让村民感到不安。" />}</p>
                 )}
 
                 {introStep >= 3 && (
-                  <p><Typewriter text="经过检查，你发现这是一个设计不完善的自动路灯原型。李师傅缺乏系统设计经验，把多个功能模块混在了一起。" onComplete={() => setTimeout(() => setIntroStep(4), 1000)} /></p>
+                  <p><Typewriter text="经过检查，你发现这是一个设计不完善的自动路灯原型。李师傅缺乏系统设计经验，把多个功能模块混在了一起。" /></p>
                 )}
 
                 {introStep >= 4 && (
                   <p className="text-blue-400 font-mono text-sm mt-8">
-                    <Typewriter text="> 任务：使用【黑箱法】测试输入输出，剪断错误连线，保留核心功能。" onComplete={() => setTimeout(() => setPhase('blackbox'), 500)} />
+                    <Typewriter text="> 任务：使用【黑箱法】测试输入输出，剪断错误连线，保留核心功能。" />
                   </p>
+                )}
+                
+                {/* 提示按Enter继续 */}
+                {introStep < 4 && (
+                  <p className="text-slate-500 text-sm mt-4 animate-pulse">按 Enter 或 空格 继续...</p>
                 )}
               </div>
             </motion.div>
@@ -522,19 +527,25 @@ export function Chapter1({ onComplete }: { onComplete?: () => void }) {
               <div className="max-w-2xl text-slate-300 space-y-4 leading-relaxed">
                 {outroStep >= 0 && (
                   <p>
-                    <Typewriter text="通过黑箱法，你排除了无用的噪音干扰；通过筛选法，你找到了最适合李家坳的供电与控制方案。" speed={30} onComplete={() => setOutroStep(1)} />
+                    <Typewriter text="通过黑箱法，你排除了无用的噪音干扰；通过筛选法，你找到了最适合李家坳的供电与控制方案。" speed={30} />
                   </p>
                 )}
                 {outroStep >= 1 && (
                   <p>
-                    <Typewriter text="李师傅的自制装置终于被改造成了科学的风光互补自动路灯核心模块。" speed={30} onComplete={() => setOutroStep(2)} />
+                    <Typewriter text="李师傅的自制装置终于被改造成了科学的风光互补自动路灯核心模块。" speed={30} />
                   </p>
                 )}
                 {outroStep >= 2 && (
                   <p className="text-blue-400 font-mono mt-8">
-                    <Typewriter text="> 下一步：寻找铁匠打造灯柱，但需要先解读李师傅留下的技术图纸。" speed={30} onComplete={() => setShowNextBtn(true)} />
+                    <Typewriter text="> 下一步：寻找铁匠打造灯柱，但需要先解读李师傅留下的技术图纸。" speed={30} />
                   </p>
                 )}
+                
+                {/* 提示按Enter继续 */}
+                {!showNextBtn && (
+                  <p className="text-slate-500 text-sm mt-4 animate-pulse">按 Enter 或 空格 继续...</p>
+                )}
+                
                 {showNextBtn && (
                   <button
                     onClick={() => {
