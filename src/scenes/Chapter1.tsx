@@ -28,7 +28,7 @@ const CONTROL_OPTIONS = [
 ];
 
 export function Chapter1({ onComplete }: { onComplete?: () => void }) {
-  const { state, addScore, recordError, recordSuccess, resetChapterStats } = useGame();
+  const { state, addScore, recordError, recordSuccess, resetChapterStats, completeChapter } = useGame();
   
   const [phase, setPhase] = useState<Phase>('intro');
   const [introStep, setIntroStep] = useState(0);
@@ -503,7 +503,10 @@ export function Chapter1({ onComplete }: { onComplete?: () => void }) {
                 )}
                 {showNextBtn && (
                   <button
-                    onClick={onComplete}
+                    onClick={() => {
+                      completeChapter('chapter1', state.chapterScores.chapter1);
+                      onComplete?.();
+                    }}
                     className="mt-8 px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded shadow-[0_0_20px_rgba(37,99,235,0.4)] transition-all animate-fade-in"
                   >
                     进入第二章
