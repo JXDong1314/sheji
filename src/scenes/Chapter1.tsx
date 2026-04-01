@@ -70,42 +70,41 @@ export function Chapter1({ onComplete }: { onComplete?: () => void }) {
   }, [isBlackboxSolved, phase]);
 
   // 键盘事件监听 - 处理Enter键推进对话
-  useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        
-        // Intro阶段：推进对话
-        if (phase === 'intro') {
-          if (introStep < 4) {
-            setIntroStep(prev => prev + 1);
-          } else {
-            setPhase('blackbox');
-          }
-        }
-        
-        // Outro阶段：推进对话或进入下一章
-        if (phase === 'outro') {
-          if (outroStep < 2) {
-            setOutroStep(prev => prev + 1);
-          } else if (!showNextBtn) {
-            setShowNextBtn(true);
-          } else {
-            // 点击进入下一章按钮
-            completeChapter('chapter1', state.chapterScores.chapter1);
-            onComplete?.();
-          }
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      
+      // Intro阶段：推进对话
+      if (phase === 'intro') {
+        if (introStep < 4) {
+          setIntroStep(introStep + 1);
+        } else {
+          setPhase('blackbox');
         }
       }
-    };
-
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [phase, introStep, outroStep, showNextBtn, completeChapter, state.chapterScores.chapter1, onComplete]);
+      
+      // Outro阶段：推进对话或进入下一章
+      if (phase === 'outro') {
+        if (outroStep < 2) {
+          setOutroStep(outroStep + 1);
+        } else if (!showNextBtn) {
+          setShowNextBtn(true);
+        } else {
+          completeChapter('chapter1', state.chapterScores.chapter1);
+          onComplete?.();
+        }
+      }
+    }
+  };
 
   return (
     <SceneBackground scene="chapter1">
-      <div className="relative z-10 w-full h-screen text-slate-200 font-sans overflow-hidden tech-grid flex flex-col">
+      <div 
+        className="relative z-10 w-full h-screen text-slate-200 font-sans overflow-hidden tech-grid flex flex-col outline-none"
+        tabIndex={0}
+        onKeyDown={handleKeyDown}
+        ref={(el) => el?.focus()}
+      >
         {/* Header */}
         <header className="p-4 border-b border-slate-800 flex justify-between items-center bg-black/50 backdrop-blur-sm">
         <div className="flex items-center gap-2">
