@@ -69,41 +69,53 @@ export function Chapter1({ onComplete }: { onComplete?: () => void }) {
     }
   }, [isBlackboxSolved, phase]);
 
-  // 键盘事件监听 - 处理Enter键推进对话
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      
-      // Intro阶段：推进对话
-      if (phase === 'intro') {
-        if (introStep < 4) {
-          setIntroStep(introStep + 1);
-        } else {
-          setPhase('blackbox');
-        }
+  // 推进对话的通用函数
+  const advanceDialog = () => {
+    // Intro阶段：推进对话
+    if (phase === 'intro') {
+      if (introStep < 4) {
+        setIntroStep(introStep + 1);
+      } else {
+        setPhase('blackbox');
       }
-      
-      // Outro阶段：推进对话或进入下一章
-      if (phase === 'outro') {
-        if (outroStep < 2) {
-          setOutroStep(outroStep + 1);
-        } else if (!showNextBtn) {
-          setShowNextBtn(true);
-        } else {
-          completeChapter('chapter1', state.chapterScores.chapter1);
-          onComplete?.();
-        }
+    }
+    
+    // Outro阶段：推进对话或进入下一章
+    if (phase === 'outro') {
+      if (outroStep < 2) {
+        setOutroStep(outroStep + 1);
+      } else if (!showNextBtn) {
+        setShowNextBtn(true);
+      } else {
+        completeChapter('chapter1', state.chapterScores.chapter1);
+        onComplete?.();
       }
     }
   };
 
+  // 键盘事件监听
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        advanceDialog();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  });
+
   return (
     <SceneBackground scene="chapter1">
       <div 
-        className="relative z-10 w-full h-screen text-slate-200 font-sans overflow-hidden tech-grid flex flex-col outline-none"
-        tabIndex={0}
-        onKeyDown={handleKeyDown}
-        ref={(el) => el?.focus()}
+        className="relative z-10 w-full h-screen text-slate-200 font-sans overflow-hidden tech-grid flex flex-col"
+        onClick={() => {
+          // 只在intro和outro阶段点击推进对话
+          if (phase === 'intro' || phase === 'outro') {
+            advanceDialog();
+          }
+        }}
       >
         {/* Header */}
         <header className="p-4 border-b border-slate-800 flex justify-between items-center bg-black/50 backdrop-blur-sm">
@@ -173,10 +185,8 @@ export function Chapter1({ onComplete }: { onComplete?: () => void }) {
                   </p>
                 )}
                 
-                {/* 提示按Enter继续 */}
-                {introStep < 4 && (
-                  <p className="text-slate-500 text-sm mt-4 animate-pulse">按 Enter 或 空格 继续...</p>
-                )}
+                {/* 提示点击继续 */}
+                <p className="text-slate-500 text-sm mt-4 animate-pulse">点击任意位置继续...</p>
               </div>
             </motion.div>
           )}
@@ -540,9 +550,9 @@ export function Chapter1({ onComplete }: { onComplete?: () => void }) {
                   </p>
                 )}
                 
-                {/* 提示按Enter继续 */}
+                {/* 提示点击继续 */}
                 {!showNextBtn && (
-                  <p className="text-slate-500 text-sm mt-4 animate-pulse">按 Enter 或 空格 继续...</p>
+                  <p className="text-slate-500 text-sm mt-4 animate-pulse">点击任意位置继续...</p>
                 )}
                 
                 {showNextBtn && (
